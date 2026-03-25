@@ -322,7 +322,7 @@ export default function ScanReceiptPage() {
               </div>
               <h3 className="font-semibold text-lg">Fis okunuyor...</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                Claude AI fisinizi analiz ediyor. Tarih, tutar, magaza ve urunler otomatik olarak cikarilacak.
+                AI fisinizi analiz ediyor. Tarih, tutar, magaza ve urunler otomatik olarak cikarilacak.
               </p>
               <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />

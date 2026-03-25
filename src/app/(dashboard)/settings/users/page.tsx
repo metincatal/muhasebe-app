@@ -137,10 +137,19 @@ export default function UsersSettingsPage() {
     if (result.error) {
       toast.error("Davet gonderilemedi", { description: result.error });
     } else {
-      const emailMsg = result.emailSent
-        ? `${inviteEmail} adresine davet e-postasi gonderildi.`
-        : `Davet olusturuldu. E-posta gonderilemedi, linki manuel paylasabilirsiniz.`;
-      toast.success("Davet olusturuldu", { description: emailMsg });
+      if (result.emailSent) {
+        toast.success("Davet olusturuldu", {
+          description: `${inviteEmail} adresine davet e-postasi gonderildi.`,
+        });
+      } else {
+        // E-posta gonderilemedi — linki kopyalamaya yonlendir
+        const inviteLink = `${window.location.origin}/invite/${result.token}`;
+        await navigator.clipboard.writeText(inviteLink);
+        toast.success("Davet olusturuldu — link kopyalandi!", {
+          description: "E-posta gonderilemedi. Davet linki panonuza kopyalandi, WhatsApp veya mesaj ile paylasabilirsiniz.",
+          duration: 8000,
+        });
+      }
       setShowInviteDialog(false);
       setInviteEmail("");
       setInviteRole("viewer");

@@ -1,9 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { ReceiptOCRResult } from "@/types";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 const OCR_PROMPT = `Bu bir Turk fisi/makbuzu fotografidir. Lutfen asagidaki bilgileri JSON formatinda cikar:
 
@@ -28,63 +24,63 @@ Kurallar:
 - Para birimi bulunamazsa "TRY" varsay.
 - Sadece JSON dondur, baska aciklama ekleme.`;
 
-export async function parseReceipt(
-  imageBase64: string,
-  mimeType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"
-): Promise<ReceiptOCRResult> {
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2000,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mimeType,
-              data: imageBase64,
-            },
-          },
-          {
-            type: "text",
-            text: OCR_PROMPT,
-          },
-        ],
-      },
-    ],
-  });
-
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("OCR yaniti alinamadi");
+function getGemini() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY yapilandirilmamis");
   }
+  return new GoogleGenerativeAI(apiKey);
+}
 
-  // Extract JSON from response (may be wrapped in markdown code blocks)
-  let jsonStr = textBlock.text.trim();
+function extractJSON(text: string): string {
+  let jsonStr = text.trim();
   const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) {
     jsonStr = jsonMatch[1].trim();
   }
+  return jsonStr;
+}
+
+export async function parseReceipt(
+  imageBase64: string,
+  mimeType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"
+): Promise<ReceiptOCRResult> {
+  const genAI = getGemini();
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const result = await model.generateContent([
+    {
+      inlineData: {
+        mimeType,
+        data: imageBase64,
+      },
+    },
+    { text: OCR_PROMPT },
+  ]);
+
+  const response = result.response;
+  const text = response.text();
+
+  if (!text) {
+    throw new Error("OCR yaniti alinamadi");
+  }
 
   try {
-    return JSON.parse(jsonStr) as ReceiptOCRResult;
+    return JSON.parse(extractJSON(text)) as ReceiptOCRResult;
   } catch {
-    throw new Error("OCR sonucu ayristirilamadi: " + jsonStr.slice(0, 200));
+    throw new Error("OCR sonucu ayristirilamadi: " + text.slice(0, 200));
   }
 }
 
 export async function parsePDFInvoice(
   textContent: string
 ): Promise<Partial<ReceiptOCRResult>> {
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2000,
-    messages: [
-      {
-        role: "user",
-        content: `Bu bir Turk faturasinin metin icerigidir. Lutfen asagidaki bilgileri JSON formatinda cikar:
+  const genAI = getGemini();
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const result = await model.generateContent([
+    {
+      text: `Bu bir Turk faturasinin metin icerigidir. Lutfen asagidaki bilgileri JSON formatinda cikar:
 
 {
   "vendor_name": "Firma adi",
@@ -102,20 +98,15 @@ Fatura metni:
 ${textContent}
 
 Sadece JSON dondur.`,
-      },
-    ],
-  });
+    },
+  ]);
 
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
+  const response = result.response;
+  const text = response.text();
+
+  if (!text) {
     throw new Error("PDF analiz yaniti alinamadi");
   }
 
-  let jsonStr = textBlock.text.trim();
-  const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[1].trim();
-  }
-
-  return JSON.parse(jsonStr);
+  return JSON.parse(extractJSON(text));
 }

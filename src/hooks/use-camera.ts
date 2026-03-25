@@ -18,9 +18,15 @@ export function useCamera(options: UseCameraOptions = {}) {
   const startCamera = useCallback(async () => {
     try {
       setError(null);
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError("Bu tarayici kamera erisimini desteklemiyor. HTTPS gereklidir.");
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "environment", // Arka kamera
+          facingMode: { ideal: "environment" },
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
@@ -29,11 +35,58 @@ export function useCamera(options: UseCameraOptions = {}) {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        // Video metadatasi yuklenene kadar bekle
+        await new Promise<void>((resolve, reject) => {
+          const video = videoRef.current!;
+          video.onloadedmetadata = () => {
+            video.play().then(resolve).catch(reject);
+          };
+          // Zaten yuklenmissel hemen play
+          if (video.readyState >= 1) {
+            video.play().then(resolve).catch(reject);
+          }
+        });
       }
       setIsActive(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Kamera erisimi reddedildi";
+      console.error("Kamera hatasi:", err);
+      let message = "Kamera erisimi reddedildi";
+      if (err instanceof Error) {
+        if (err.name === "NotAllowedError") {
+          message = "Kamera izni reddedildi. Tarayici ayarlarindan kamera iznini acin.";
+        } else if (err.name === "NotFoundError") {
+          message = "Kamera bulunamadi. Cihazinizda kamera oldugundan emin olun.";
+        } else if (err.name === "NotReadableError") {
+          message = "Kamera baska bir uygulama tarafindan kullaniliyor.";
+        } else if (err.name === "OverconstrainedError") {
+          message = "Arka kamera bulunamadi, on kamera deneniyor...";
+          // Arka kamera yoksa on kamerayi dene
+          try {
+            const fallbackStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: "user" },
+            });
+            streamRef.current = fallbackStream;
+            if (videoRef.current) {
+              videoRef.current.srcObject = fallbackStream;
+              await new Promise<void>((resolve, reject) => {
+                const video = videoRef.current!;
+                video.onloadedmetadata = () => {
+                  video.play().then(resolve).catch(reject);
+                };
+                if (video.readyState >= 1) {
+                  video.play().then(resolve).catch(reject);
+                }
+              });
+            }
+            setIsActive(true);
+            return;
+          } catch {
+            message = "Hicbir kamera erisimi saglanamadi.";
+          }
+        } else {
+          message = err.message;
+        }
+      }
       setError(message);
       setIsActive(false);
     }
