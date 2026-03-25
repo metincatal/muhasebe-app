@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendInviteEmail } from "@/lib/email/send-invite";
 
 export async function getMembers(orgId: string) {
   const supabase = await createClient();
@@ -119,8 +120,40 @@ export async function createInvitation(orgId: string, email: string, role: strin
     return { error: error.message };
   }
 
+  // Davet e-postasi gonder
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "https://muhasebe-app-sigma.vercel.app");
+  const inviteUrl = `${baseUrl}/invite/${token}`;
+
+  // Davet edenin adini al
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+
+  // Organizasyon adini al
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", orgId)
+    .single();
+
+  const emailResult = await sendInviteEmail({
+    to: email,
+    inviterName: profile?.full_name || "Bir kullanici",
+    orgName: org?.name || "Muhasebe Pro",
+    role,
+    inviteUrl,
+  });
+
+  if (emailResult.error) {
+    console.error("Email send error:", emailResult.error);
+    // E-posta gonderilemese bile davet olusturuldu, hata donme
+  }
+
   revalidatePath("/settings/users");
-  return { data, token };
+  return { data, token, emailSent: !emailResult.error };
 }
 
 export async function getInvitations(orgId: string) {

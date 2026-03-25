@@ -128,7 +128,10 @@ export default function UsersSettingsPage() {
     if (result.error) {
       toast.error("Davet gonderilemedi", { description: result.error });
     } else {
-      toast.success("Davet olusturuldu", { description: `${inviteEmail} adresine davet gonderildi.` });
+      const emailMsg = result.emailSent
+        ? `${inviteEmail} adresine davet e-postasi gonderildi.`
+        : `Davet olusturuldu. E-posta gonderilemedi, linki manuel paylasabilirsiniz.`;
+      toast.success("Davet olusturuldu", { description: emailMsg });
       setShowInviteDialog(false);
       setInviteEmail("");
       setInviteRole("viewer");
