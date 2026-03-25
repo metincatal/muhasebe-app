@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 interface UseCameraOptions {
   maxWidth?: number;
@@ -13,40 +13,70 @@ export function useCamera(options: UseCameraOptions = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Stream alindiktan sonra video element DOM'a geldiyse bagla
+  useEffect(() => {
+    if (isActive && streamRef.current && videoRef.current && !videoRef.current.srcObject) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+
+      const handleLoaded = () => {
+        video.play()
+          .then(() => setIsReady(true))
+          .catch((err) => {
+            console.error("Video play hatasi:", err);
+            setError("Video baslatilamadi");
+          });
+      };
+
+      video.addEventListener("loadedmetadata", handleLoaded);
+      // Zaten yuklendiyse
+      if (video.readyState >= 1) {
+        handleLoaded();
+      }
+
+      return () => {
+        video.removeEventListener("loadedmetadata", handleLoaded);
+      };
+    }
+  }, [isActive]);
 
   const startCamera = useCallback(async () => {
     try {
       setError(null);
+      setIsReady(false);
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setError("Bu tarayici kamera erisimini desteklemiyor. HTTPS gereklidir.");
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+        });
+      } catch (firstErr) {
+        // Arka kamera yoksa on kamerayi dene
+        console.warn("Arka kamera denemesi basarisiz, on kamera deneniyor:", firstErr);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+        } catch {
+          throw firstErr;
+        }
+      }
 
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        // Video metadatasi yuklenene kadar bekle
-        await new Promise<void>((resolve, reject) => {
-          const video = videoRef.current!;
-          video.onloadedmetadata = () => {
-            video.play().then(resolve).catch(reject);
-          };
-          // Zaten yuklenmissel hemen play
-          if (video.readyState >= 1) {
-            video.play().then(resolve).catch(reject);
-          }
-        });
-      }
+      // Once isActive=true yap ki video element DOM'a gelsin,
+      // useEffect icinde stream baglanacak
       setIsActive(true);
     } catch (err) {
       console.error("Kamera hatasi:", err);
@@ -58,31 +88,6 @@ export function useCamera(options: UseCameraOptions = {}) {
           message = "Kamera bulunamadi. Cihazinizda kamera oldugundan emin olun.";
         } else if (err.name === "NotReadableError") {
           message = "Kamera baska bir uygulama tarafindan kullaniliyor.";
-        } else if (err.name === "OverconstrainedError") {
-          message = "Arka kamera bulunamadi, on kamera deneniyor...";
-          // Arka kamera yoksa on kamerayi dene
-          try {
-            const fallbackStream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: "user" },
-            });
-            streamRef.current = fallbackStream;
-            if (videoRef.current) {
-              videoRef.current.srcObject = fallbackStream;
-              await new Promise<void>((resolve, reject) => {
-                const video = videoRef.current!;
-                video.onloadedmetadata = () => {
-                  video.play().then(resolve).catch(reject);
-                };
-                if (video.readyState >= 1) {
-                  video.play().then(resolve).catch(reject);
-                }
-              });
-            }
-            setIsActive(true);
-            return;
-          } catch {
-            message = "Hicbir kamera erisimi saglanamadi.";
-          }
         } else {
           message = err.message;
         }
@@ -101,6 +106,7 @@ export function useCamera(options: UseCameraOptions = {}) {
       videoRef.current.srcObject = null;
     }
     setIsActive(false);
+    setIsReady(false);
   }, []);
 
   const capturePhoto = useCallback((): string | null => {
@@ -109,7 +115,9 @@ export function useCamera(options: UseCameraOptions = {}) {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Calculate dimensions maintaining aspect ratio
+    // Video hazir degilse bos don
+    if (video.videoWidth === 0 || video.videoHeight === 0) return null;
+
     let width = video.videoWidth;
     let height = video.videoHeight;
     if (width > maxWidth) {
@@ -130,6 +138,7 @@ export function useCamera(options: UseCameraOptions = {}) {
     videoRef,
     canvasRef,
     isActive,
+    isReady,
     error,
     startCamera,
     stopCamera,

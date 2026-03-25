@@ -3,6 +3,15 @@ import { parseReceipt } from "@/lib/ai/ocr";
 
 export async function POST(request: NextRequest) {
   try {
+    // API key kontrolu
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY ortam degiskeni ayarlanmamis");
+      return NextResponse.json(
+        { error: "OCR servisi yapilandirilmamis. Lutfen yoneticiyle iletisime gecin." },
+        { status: 503 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
@@ -43,8 +52,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("OCR error:", error);
+    const message = error instanceof Error ? error.message : "OCR islemi basarisiz oldu";
     return NextResponse.json(
-      { error: "OCR islemi basarisiz oldu" },
+      { error: message },
       { status: 500 }
     );
   }

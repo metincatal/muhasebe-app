@@ -49,7 +49,7 @@ export default function ScanReceiptPage() {
   const router = useRouter();
   const { user, organization } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { videoRef, canvasRef, isActive, error: cameraError, startCamera, stopCamera, capturePhoto } = useCamera();
+  const { videoRef, canvasRef, isActive, isReady, error: cameraError, startCamera, stopCamera, capturePhoto } = useCamera();
 
   const [step, setStep] = useState<Step>("capture");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -209,14 +209,23 @@ export default function ScanReceiptPage() {
                   muted
                   className="w-full aspect-[3/4] object-cover"
                 />
+                {/* Loading overlay - kamera henuz hazir degilse */}
+                {!isReady && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white">
+                    <Loader2 className="h-8 w-8 animate-spin mb-3" />
+                    <p className="text-sm">Kamera baslatiliyor...</p>
+                  </div>
+                )}
                 {/* Capture overlay */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute inset-8 border-2 border-white/30 rounded-2xl" />
-                  <div className="absolute top-8 left-8 w-8 h-8 border-t-3 border-l-3 border-white rounded-tl-xl" />
-                  <div className="absolute top-8 right-8 w-8 h-8 border-t-3 border-r-3 border-white rounded-tr-xl" />
-                  <div className="absolute bottom-8 left-8 w-8 h-8 border-b-3 border-l-3 border-white rounded-bl-xl" />
-                  <div className="absolute bottom-8 right-8 w-8 h-8 border-b-3 border-r-3 border-white rounded-br-xl" />
-                </div>
+                {isReady && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-8 border-2 border-white/30 rounded-2xl" />
+                    <div className="absolute top-8 left-8 w-8 h-8 border-t-3 border-l-3 border-white rounded-tl-xl" />
+                    <div className="absolute top-8 right-8 w-8 h-8 border-t-3 border-r-3 border-white rounded-tr-xl" />
+                    <div className="absolute bottom-8 left-8 w-8 h-8 border-b-3 border-l-3 border-white rounded-bl-xl" />
+                    <div className="absolute bottom-8 right-8 w-8 h-8 border-b-3 border-r-3 border-white rounded-br-xl" />
+                  </div>
+                )}
                 {/* Capture button */}
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4">
                   <Button
@@ -229,7 +238,8 @@ export default function ScanReceiptPage() {
                   </Button>
                   <button
                     onClick={handleCapture}
-                    className="h-16 w-16 rounded-full bg-white border-4 border-white/50 shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
+                    disabled={!isReady}
+                    className="h-16 w-16 rounded-full bg-white border-4 border-white/50 shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center disabled:opacity-50 disabled:hover:scale-100"
                   >
                     <div className="h-12 w-12 rounded-full bg-white border-2 border-gray-300" />
                   </button>
