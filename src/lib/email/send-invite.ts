@@ -1,7 +1,3 @@
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const roleLabels: Record<string, string> = {
   admin: "Yonetici",
   accountant: "Muhasebeci",
@@ -22,6 +18,14 @@ export async function sendInviteEmail({
   inviteUrl: string;
 }) {
   const roleLabel = roleLabels[role] || role;
+
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY not set, skipping email");
+    return { error: "RESEND_API_KEY yapilandirilmamis" };
+  }
+
+  const { Resend } = await import("resend");
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const { data, error } = await resend.emails.send({
     from: "Muhasebe Pro <onboarding@resend.dev>",

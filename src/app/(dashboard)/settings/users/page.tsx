@@ -89,10 +89,11 @@ const roleColors: Record<string, string> = {
 };
 
 export default function UsersSettingsPage() {
-  const { organization, user, role: currentUserRole } = useAuthStore();
+  const { organization, user, role: currentUserRole, isLoading: authLoading } = useAuthStore();
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("viewer");
@@ -102,23 +103,31 @@ export default function UsersSettingsPage() {
   const loadData = useCallback(async () => {
     if (!organization?.id) return;
     setLoading(true);
-    const [membersData, invitationsData] = await Promise.all([
-      getMembers(organization.id),
-      getInvitations(organization.id),
-    ]);
-    setMembers(
-      (membersData as unknown as Member[]).map((m) => ({
-        ...m,
-        user_profiles: m.user_profiles as unknown as Member["user_profiles"],
-      }))
-    );
-    setInvitations(invitationsData as Invitation[]);
-    setLoading(false);
+    setError(null);
+    try {
+      const [membersData, invitationsData] = await Promise.all([
+        getMembers(organization.id),
+        getInvitations(organization.id),
+      ]);
+      setMembers(
+        (membersData as unknown as Member[]).map((m) => ({
+          ...m,
+          user_profiles: m.user_profiles as unknown as Member["user_profiles"],
+        }))
+      );
+      setInvitations(invitationsData as Invitation[]);
+    } catch (err) {
+      console.error("loadData error:", err);
+      setError("Veriler yuklenemedi");
+    } finally {
+      setLoading(false);
+    }
   }, [organization?.id]);
 
   useEffect(() => {
+    if (authLoading) return;
     loadData();
-  }, [loadData]);
+  }, [loadData, authLoading]);
 
   async function handleInvite() {
     if (!organization?.id) return;
@@ -233,9 +242,14 @@ export default function UsersSettingsPage() {
         </Card>
       </div>
 
-      {loading ? (
+      {loading || authLoading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button size="sm" variant="outline" onClick={loadData}>Tekrar Dene</Button>
         </div>
       ) : (
         <>
