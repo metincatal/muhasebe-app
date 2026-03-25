@@ -1,0 +1,157 @@
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+
+export async function getMembers(orgId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("organization_members")
+    .select("id, role, created_at, user_id")
+    .eq("organization_id", orgId)
+    .order("created_at");
+
+  if (error) {
+    console.error("getMembers error:", error);
+    return [];
+  }
+
+  // Profil bilgilerini ayri sorgula
+  const userIds = (data || []).map((m) => m.user_id);
+  const { data: profiles } = await supabase
+    .from("user_profiles")
+    .select("id, full_name, avatar_url")
+    .in("id", userIds);
+
+  const profileMap: Record<string, { id: string; full_name: string | null; avatar_url: string | null }> = {};
+  (profiles || []).forEach((p) => {
+    profileMap[p.id] = p;
+  });
+
+  return (data || []).map((m) => ({
+    ...m,
+    user_profiles: profileMap[m.user_id] || null,
+  }));
+}
+
+export async function getMemberEmails(userIds: string[]) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("id, email")
+    .in("id", userIds);
+
+  if (error) {
+    console.error("getMemberEmails error:", error);
+    return {};
+  }
+
+  const emailMap: Record<string, string> = {};
+  (data || []).forEach((u) => {
+    emailMap[u.id] = u.email || "";
+  });
+  return emailMap;
+}
+
+export async function updateMemberRole(memberId: string, role: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("organization_members")
+    .update({ role })
+    .eq("id", memberId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings/users");
+  return { success: true };
+}
+
+export async function removeMember(memberId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("organization_members")
+    .delete()
+    .eq("id", memberId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings/users");
+  return { success: true };
+}
+
+export async function createInvitation(orgId: string, email: string, role: string) {
+  const supabase = await createClient();
+
+  // Mevcut kullaniciyi al
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Oturum bulunamadi" };
+  }
+
+  // Token olustur
+  const token = crypto.randomUUID();
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  const { data, error } = await supabase
+    .from("invitations")
+    .insert({
+      organization_id: orgId,
+      email,
+      role,
+      token,
+      invited_by: user.id,
+      expires_at: expiresAt.toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("createInvitation error:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings/users");
+  return { data, token };
+}
+
+export async function getInvitations(orgId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("invitations")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getInvitations error:", error);
+    return [];
+  }
+
+  return data;
+}
+
+export async function deleteInvitation(id: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("invitations")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings/users");
+  return { success: true };
+}
