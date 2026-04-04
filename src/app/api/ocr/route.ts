@@ -52,9 +52,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("OCR error:", error);
-    const message = error instanceof Error ? error.message : "OCR islemi basarisiz oldu";
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStatus = (error as { status?: number }).status;
+
+    // Gemini API kota hatasi
+    if (errorStatus === 429 || errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("Too Many Requests")) {
+      return NextResponse.json(
+        { error: "AI servisinin kullanim kotasi doldu. Lutfen daha sonra tekrar deneyin veya API planini yukseltiniz." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
-      { error: message },
+      { error: errorMessage || "OCR islemi basarisiz oldu" },
       { status: 500 }
     );
   }

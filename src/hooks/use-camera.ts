@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback } from "react";
 
 interface UseCameraOptions {
   maxWidth?: number;
@@ -16,32 +16,36 @@ export function useCamera(options: UseCameraOptions = {}) {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Stream alindiktan sonra video element DOM'a geldiyse bagla
-  useEffect(() => {
-    if (isActive && streamRef.current && videoRef.current && !videoRef.current.srcObject) {
-      const video = videoRef.current;
-      video.srcObject = streamRef.current;
+  // Video element DOM'a eklendiginde stream'i bagla (ref callback)
+  const videoCallbackRef = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node;
+      if (node && streamRef.current && !node.srcObject) {
+        node.srcObject = streamRef.current;
 
-      const handleLoaded = () => {
-        video.play()
-          .then(() => setIsReady(true))
-          .catch((err) => {
-            console.error("Video play hatasi:", err);
-            setError("Video baslatilamadi");
-          });
-      };
+        const handleLoaded = () => {
+          node
+            .play()
+            .then(() => setIsReady(true))
+            .catch((err) => {
+              console.error("Video play hatasi:", err);
+              setError("Video baslatilamadi");
+            });
+        };
 
-      video.addEventListener("loadedmetadata", handleLoaded);
-      // Zaten yuklendiyse
-      if (video.readyState >= 1) {
-        handleLoaded();
+        node.addEventListener("loadedmetadata", handleLoaded, { once: true });
+        // Zaten yuklendiyse
+        if (node.readyState >= 1) {
+          node.removeEventListener("loadedmetadata", handleLoaded);
+          handleLoaded();
+        }
       }
-
-      return () => {
-        video.removeEventListener("loadedmetadata", handleLoaded);
-      };
-    }
-  }, [isActive]);
+    },
+    // isActive degistiginde callback guncellenir, boylece DOM'a eklenen
+    // video elementi her zaman guncel stream'e baglanir
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isActive]
+  );
 
   const startCamera = useCallback(async () => {
     try {
@@ -136,6 +140,7 @@ export function useCamera(options: UseCameraOptions = {}) {
 
   return {
     videoRef,
+    videoCallbackRef,
     canvasRef,
     isActive,
     isReady,

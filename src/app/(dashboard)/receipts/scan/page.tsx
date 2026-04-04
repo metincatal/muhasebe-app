@@ -49,7 +49,7 @@ export default function ScanReceiptPage() {
   const router = useRouter();
   const { user, organization } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { videoRef, canvasRef, isActive, isReady, error: cameraError, startCamera, stopCamera, capturePhoto } = useCamera();
+  const { videoRef, videoCallbackRef, canvasRef, isActive, isReady, error: cameraError, startCamera, stopCamera, capturePhoto } = useCamera();
 
   const [step, setStep] = useState<Step>("capture");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -203,7 +203,7 @@ export default function ScanReceiptPage() {
             {isActive && (
               <div className="relative rounded-xl overflow-hidden bg-black mb-4">
                 <video
-                  ref={videoRef}
+                  ref={videoCallbackRef}
                   autoPlay
                   playsInline
                   muted
