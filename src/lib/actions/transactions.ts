@@ -4,19 +4,26 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { transactionSchema } from "@/lib/validations";
 
+const PAGE_SIZE = 50;
+
 export async function getTransactions(orgId: string, filters?: {
   type?: string;
   search?: string;
   limit?: number;
+  offset?: number;
 }) {
   const supabase = await createClient();
+
+  const limit = filters?.limit ?? PAGE_SIZE;
+  const offset = filters?.offset ?? 0;
 
   let query = supabase
     .from("transactions")
     .select("*, categories(name, color, icon)")
     .eq("organization_id", orgId)
     .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (filters?.type && filters.type !== "all") {
     query = query.eq("type", filters.type);
@@ -26,10 +33,6 @@ export async function getTransactions(orgId: string, filters?: {
     query = query.or(
       `description.ilike.%${filters.search}%,counterparty.ilike.%${filters.search}%`
     );
-  }
-
-  if (filters?.limit) {
-    query = query.limit(filters.limit);
   }
 
   const { data, error } = await query;

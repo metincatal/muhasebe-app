@@ -56,38 +56,50 @@ interface Transaction {
   categories: { name: string; color: string; icon: string } | null;
 }
 
+const PAGE_SIZE = 50;
+
 export default function TransactionsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  const loadTransactions = useCallback(async () => {
+  const loadTransactions = useCallback(async (reset = true) => {
     if (!organization?.id) return;
-    setLoading(true);
+    const currentOffset = reset ? 0 : offset;
+    reset ? setLoading(true) : setLoadingMore(true);
     try {
       const data = await getTransactions(organization.id, {
         type: typeFilter !== "all" ? typeFilter : undefined,
         search: search || undefined,
+        offset: currentOffset,
       });
-      setTransactions(data as Transaction[]);
+      const rows = data as Transaction[];
+      setTransactions((prev) => reset ? rows : [...prev, ...rows]);
+      setHasMore(rows.length === PAGE_SIZE);
+      if (reset) setOffset(PAGE_SIZE);
+      else setOffset(currentOffset + PAGE_SIZE);
     } catch (err) {
       console.error("Load error:", err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [organization?.id, typeFilter, search]);
+  }, [organization?.id, typeFilter, search, offset]);
 
   useEffect(() => {
     if (authLoading) return;
-    loadTransactions();
-  }, [loadTransactions, authLoading]);
+    loadTransactions(true);
+  }, [organization?.id, typeFilter, authLoading]);
 
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!authLoading && organization?.id) loadTransactions();
+      if (!authLoading && organization?.id) loadTransactions(true);
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
@@ -98,7 +110,7 @@ export default function TransactionsPage() {
       toast.error("Silinemedi", { description: result.error });
     } else {
       toast.success("Islem silindi");
-      loadTransactions();
+      loadTransactions(true);
     }
   }
 
@@ -273,6 +285,19 @@ export default function TransactionsPage() {
                 )}
               </TableBody>
             </Table>
+          )}
+          {hasMore && (
+            <div className="flex justify-center p-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadTransactions(false)}
+                disabled={loadingMore}
+              >
+                {loadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Daha Fazla Yukle
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

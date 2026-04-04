@@ -109,12 +109,7 @@ export default function UsersSettingsPage() {
         getMembers(organization.id),
         getInvitations(organization.id),
       ]);
-      setMembers(
-        (membersData as unknown as Member[]).map((m) => ({
-          ...m,
-          user_profiles: m.user_profiles as unknown as Member["user_profiles"],
-        }))
-      );
+      setMembers(membersData as Member[]);
       setInvitations(invitationsData as Invitation[]);
     } catch (err) {
       console.error("loadData error:", err);

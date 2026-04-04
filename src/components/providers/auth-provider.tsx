@@ -50,12 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (membership) {
-          const org = membership.organizations as unknown as {
-            id: string;
-            name: string;
-            type: string;
-            default_currency: string;
-          };
+          const org = (
+            Array.isArray(membership.organizations)
+              ? membership.organizations[0]
+              : membership.organizations
+          ) as { id: string; name: string; type: string; default_currency: string };
           setOrganization({
             id: org.id,
             name: org.name,

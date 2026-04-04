@@ -73,37 +73,49 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
+const PAGE_SIZE = 50;
+
 export default function InvoicesPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadInvoices = useCallback(async () => {
+  const loadInvoices = useCallback(async (reset = true) => {
     if (!organization?.id) return;
-    setLoading(true);
+    const currentOffset = reset ? 0 : offset;
+    reset ? setLoading(true) : setLoadingMore(true);
     try {
       const data = await getInvoices(organization.id, {
         status: statusFilter !== "all" ? statusFilter : undefined,
         search: search || undefined,
+        offset: currentOffset,
       });
-      setInvoices(data as Invoice[]);
+      const rows = data as Invoice[];
+      setInvoices((prev) => reset ? rows : [...prev, ...rows]);
+      setHasMore(rows.length === PAGE_SIZE);
+      if (reset) setOffset(PAGE_SIZE);
+      else setOffset(currentOffset + PAGE_SIZE);
     } catch (err) {
       console.error("Load error:", err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [organization?.id, statusFilter, search]);
+  }, [organization?.id, statusFilter, search, offset]);
 
   useEffect(() => {
     if (authLoading) return;
-    loadInvoices();
-  }, [loadInvoices, authLoading]);
+    loadInvoices(true);
+  }, [organization?.id, statusFilter, authLoading]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!authLoading && organization?.id) loadInvoices();
+      if (!authLoading && organization?.id) loadInvoices(true);
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
@@ -114,7 +126,7 @@ export default function InvoicesPage() {
       toast.error("Durum guncellenemedi");
     } else {
       toast.success(`Fatura durumu: ${statusLabels[status]}`);
-      loadInvoices();
+      loadInvoices(true);
     }
   }
 
@@ -124,7 +136,7 @@ export default function InvoicesPage() {
       toast.error("Silinemedi");
     } else {
       toast.success("Fatura silindi");
-      loadInvoices();
+      loadInvoices(true);
     }
   }
 
@@ -317,6 +329,19 @@ export default function InvoicesPage() {
                 )}
               </TableBody>
             </Table>
+          )}
+          {hasMore && (
+            <div className="flex justify-center p-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadInvoices(false)}
+                disabled={loadingMore}
+              >
+                {loadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Daha Fazla Yukle
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

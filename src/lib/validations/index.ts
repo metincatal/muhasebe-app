@@ -17,7 +17,10 @@ export const transactionSchema = z.object({
     .max(500, "Aciklama en fazla 500 karakter olabilir"),
   counterparty: z.string().max(200).optional(),
   category_id: z.string().uuid().optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Gecersiz tarih formati"),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Gecersiz tarih formati")
+    .refine((v) => !isNaN(new Date(v).getTime()), "Gecersiz tarih"),
   tags: z.array(z.string()).optional(),
   created_by: z.string().uuid("Gecersiz kullanici"),
 });
@@ -41,8 +44,15 @@ export const invoiceSchema = z.object({
     error: "Fatura turu secilmeli",
   }),
   invoice_number: z.string().max(50).optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Gecersiz tarih"),
-  due_date: z.string().optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Gecersiz tarih")
+    .refine((v) => !isNaN(new Date(v).getTime()), "Gecersiz tarih"),
+  due_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Gecersiz vade tarihi")
+    .refine((v) => !isNaN(new Date(v).getTime()), "Gecersiz vade tarihi")
+    .optional(),
   counterparty_name: z
     .string({ error: "Karsi taraf adi gerekli" })
     .min(2, "Ad en az 2 karakter olmali"),

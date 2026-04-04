@@ -35,6 +35,26 @@ export async function createReceiptWithTransaction(input: {
 }) {
   const supabase = await createClient();
 
+  // Doviz kuru hesapla
+  let exchangeRate = 1;
+  let amountInBase = input.total_amount;
+
+  if (input.currency !== "TRY") {
+    const { data: rateData } = await supabase
+      .from("exchange_rates")
+      .select("rate")
+      .eq("base_currency", "TRY")
+      .eq("target_currency", input.currency)
+      .order("date", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (rateData) {
+      exchangeRate = rateData.rate;
+      amountInBase = input.total_amount * exchangeRate;
+    }
+  }
+
   // Once islemi olustur
   const { data: transaction, error: txError } = await supabase
     .from("transactions")
@@ -43,7 +63,8 @@ export async function createReceiptWithTransaction(input: {
       type: "expense",
       amount: input.total_amount,
       currency: input.currency,
-      amount_in_base: input.total_amount, // TODO: kur hesapla
+      exchange_rate: exchangeRate,
+      amount_in_base: amountInBase,
       description: `${input.vendor_name} - Fis`,
       counterparty: input.vendor_name,
       category_id: input.category_id || null,
@@ -58,7 +79,7 @@ export async function createReceiptWithTransaction(input: {
     return { error: txError.message };
   }
 
-  // Sonra fis kaydini olustur
+  // Sonra fis kaydini olustur — basarisiz olursa islemi de geri al
   const { data: receipt, error: rcError } = await supabase
     .from("receipts")
     .insert({
@@ -81,6 +102,8 @@ export async function createReceiptWithTransaction(input: {
 
   if (rcError) {
     console.error("createReceipt error:", rcError);
+    // Transaction orphan birakmamak icin geri al
+    await supabase.from("transactions").delete().eq("id", transaction.id);
     return { error: rcError.message };
   }
 

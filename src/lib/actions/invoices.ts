@@ -4,18 +4,24 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { invoiceSchema } from "@/lib/validations";
 
+const PAGE_SIZE = 50;
+
 export async function getInvoices(orgId: string, filters?: {
   type?: string;
   status?: string;
   search?: string;
+  offset?: number;
 }) {
   const supabase = await createClient();
+
+  const offset = filters?.offset ?? 0;
 
   let query = supabase
     .from("invoices")
     .select("*")
     .eq("organization_id", orgId)
-    .order("date", { ascending: false });
+    .order("date", { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1);
 
   if (filters?.type && filters.type !== "all") {
     query = query.eq("type", filters.type);
@@ -126,8 +132,13 @@ export async function createInvoice(input: {
 
   if (itemsError) {
     console.error("createInvoice items error:", itemsError);
-    // Faturayı da silmek lazim
-    await supabase.from("invoices").delete().eq("id", invoice.id);
+    const { error: deleteError } = await supabase
+      .from("invoices")
+      .delete()
+      .eq("id", invoice.id);
+    if (deleteError) {
+      console.error("createInvoice rollback error:", deleteError);
+    }
     return { error: itemsError.message };
   }
 
