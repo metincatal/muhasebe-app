@@ -79,6 +79,7 @@ const navItems = [
       { title: "Kar-Zarar", url: "/reports/profit-loss" },
       { title: "Bilanco", url: "/reports/balance-sheet" },
       { title: "Nakit Akis", url: "/reports/cash-flow" },
+      { title: "Karsilastirma", url: "/reports/comparison" },
     ],
   },
 ];

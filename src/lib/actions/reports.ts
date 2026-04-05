@@ -182,6 +182,71 @@ export async function getBalanceSheet(orgId: string, asOfDate?: string) {
   };
 }
 
+export async function getComparisonReport(orgId: string, year1: number, year2: number) {
+  const supabase = await createClient();
+
+  async function getYearData(year: number) {
+    const { data: transactions } = await supabase
+      .from("transactions")
+      .select("type, amount, amount_in_base, category_id, categories(name, color)")
+      .eq("organization_id", orgId)
+      .gte("date", `${year}-01-01`)
+      .lte("date", `${year}-12-31`);
+
+    const byCategory: Record<string, { name: string; color: string; income: number; expense: number }> = {};
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    (transactions || []).forEach((tx) => {
+      const amt = Number(tx.amount_in_base || tx.amount);
+      const cat = tx.categories as unknown as { name: string; color: string } | null;
+      const catName = cat?.name || "Kategorisiz";
+      const catColor = cat?.color || "#6b7280";
+      const catId = tx.category_id || "uncategorized";
+
+      if (!byCategory[catId]) {
+        byCategory[catId] = { name: catName, color: catColor, income: 0, expense: 0 };
+      }
+
+      if (tx.type === "income") {
+        totalIncome += amt;
+        byCategory[catId].income += amt;
+      } else if (tx.type === "expense") {
+        totalExpense += amt;
+        byCategory[catId].expense += amt;
+      }
+    });
+
+    return { totalIncome, totalExpense, netProfit: totalIncome - totalExpense, byCategory };
+  }
+
+  const [data1, data2] = await Promise.all([getYearData(year1), getYearData(year2)]);
+
+  const allCatIds = new Set([...Object.keys(data1.byCategory), ...Object.keys(data2.byCategory)]);
+  const categories = Array.from(allCatIds).map((catId) => {
+    const cat1 = data1.byCategory[catId];
+    const cat2 = data2.byCategory[catId];
+    return {
+      id: catId,
+      name: cat1?.name || cat2?.name || "Kategorisiz",
+      color: cat1?.color || cat2?.color || "#6b7280",
+      year1Income: cat1?.income ?? 0,
+      year1Expense: cat1?.expense ?? 0,
+      year2Income: cat2?.income ?? 0,
+      year2Expense: cat2?.expense ?? 0,
+    };
+  }).sort((a, b) => (b.year1Expense + b.year2Expense) - (a.year1Expense + a.year2Expense));
+
+  return {
+    year1: { year: year1, ...data1 },
+    year2: { year: year2, ...data2 },
+    categories,
+    incomeDiff: data2.totalIncome - data1.totalIncome,
+    expenseDiff: data2.totalExpense - data1.totalExpense,
+    netDiff: data2.netProfit - data1.netProfit,
+  };
+}
+
 export async function getCashFlowReport(orgId: string, year: number) {
   const supabase = await createClient();
 

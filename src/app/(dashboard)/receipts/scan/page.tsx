@@ -57,6 +57,8 @@ export default function ScanReceiptPage() {
   const [ocrResult, setOcrResult] = useState<ReceiptOCRResult | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [isAiCategorizing, setIsAiCategorizing] = useState(false);
+  const [aiCategorized, setAiCategorized] = useState(false);
 
   // Editable form state (populated from OCR)
   const [vendorName, setVendorName] = useState("");
@@ -132,6 +134,35 @@ export default function ScanReceiptPage() {
       toast.success("Fis basariyla okundu!", {
         description: "Lutfen bilgileri kontrol edin ve onaylayin.",
       });
+
+      // OCR bittikten sonra AI ile kategori tahmin et
+      if (organization?.id) {
+        const itemDescriptions = result.items?.map((i) => i.description).filter(Boolean).join(", ") ?? "";
+        const combinedDesc = [result.vendor_name, itemDescriptions].filter(Boolean).join(" - ");
+        if (combinedDesc.trim()) {
+          setIsAiCategorizing(true);
+          fetch("/api/categorize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description: combinedDesc,
+              vendor_name: result.vendor_name,
+              amount: result.total_amount,
+              type: "expense",
+              org_id: organization.id,
+            }),
+          })
+            .then((r) => r.json())
+            .then((data: { category_id?: string | null }) => {
+              if (data.category_id) {
+                setCategoryId(data.category_id);
+                setAiCategorized(true);
+              }
+            })
+            .catch(() => {})
+            .finally(() => setIsAiCategorizing(false));
+        }
+      }
     } catch (err) {
       toast.error("OCR hatasi", {
         description: err instanceof Error ? err.message : "Fis okunamadi",
@@ -442,8 +473,17 @@ export default function ScanReceiptPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Kategori</Label>
-                  <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
+                  <Label className="flex items-center gap-1.5">
+                    Kategori
+                    {isAiCategorizing && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                    {aiCategorized && !isAiCategorizing && (
+                      <span className="flex items-center gap-1 text-xs font-normal text-amber">
+                        <Sparkles className="h-3 w-3" />
+                        AI tarafindan onerildi
+                      </span>
+                    )}
+                  </Label>
+                  <Select value={categoryId} onValueChange={(v) => { setCategoryId(v ?? ""); setAiCategorized(false); }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Kategori secin" />
                     </SelectTrigger>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Loader2,
   Calendar,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
@@ -60,6 +61,9 @@ export default function NewTransactionPage() {
   const [notes, setNotes] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [aiSuggestion, setAiSuggestion] = useState<{ id: string; name: string } | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const aiRequestRef = useRef(0);
 
   useEffect(() => {
     if (!organization?.id) return;
@@ -75,7 +79,42 @@ export default function NewTransactionPage() {
 
   useEffect(() => {
     setCategoryId("");
+    setAiSuggestion(null);
   }, [type]);
+
+  useEffect(() => {
+    setAiSuggestion(null);
+    if (!description.trim() || description.length < 5 || type === "transfer" || !organization?.id) {
+      setIsAiLoading(false);
+      return;
+    }
+    setIsAiLoading(true);
+    const requestId = ++aiRequestRef.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/categorize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description, type, org_id: organization.id }),
+        });
+        if (res.ok && requestId === aiRequestRef.current) {
+          const data = await res.json() as { category_id: string | null; category_name: string | null };
+          if (data.category_id && data.category_name) {
+            setAiSuggestion({ id: data.category_id, name: data.category_name });
+          }
+        }
+      } catch {
+        // sessizce bas
+      } finally {
+        if (requestId === aiRequestRef.current) {
+          setIsAiLoading(false);
+        }
+      }
+    }, 700);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [description, type, organization?.id]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -262,7 +301,7 @@ export default function NewTransactionPage() {
             {type !== "transfer" && (
               <div className="space-y-2">
                 <Label>Kategori</Label>
-                <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
+                <Select value={categoryId} onValueChange={(v) => { setCategoryId(v ?? ""); setAiSuggestion(null); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Kategori secin" />
                   </SelectTrigger>
@@ -280,6 +319,25 @@ export default function NewTransactionPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {isAiLoading && description.length >= 5 && !categoryId && (
+                  <div className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">AI kategori tahmin ediyor...</span>
+                  </div>
+                )}
+                {aiSuggestion && !categoryId && (
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-amber shrink-0" />
+                    <span className="text-xs text-muted-foreground">AI onerisi:</span>
+                    <button
+                      type="button"
+                      onClick={() => { setCategoryId(aiSuggestion.id); setAiSuggestion(null); }}
+                      className="text-xs font-medium text-amber hover:underline"
+                    >
+                      {aiSuggestion.name}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
