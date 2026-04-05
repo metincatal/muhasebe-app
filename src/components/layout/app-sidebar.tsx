@@ -55,7 +55,15 @@ import { useAuthStore } from "@/stores/auth-store";
 
 const navItems = [
   { title: "Genel Bakis", url: "/", icon: LayoutDashboard },
-  { title: "Islemler", url: "/transactions", icon: ArrowLeftRight },
+  {
+    title: "Islemler",
+    url: "/transactions",
+    icon: ArrowLeftRight,
+    children: [
+      { title: "Tum Islemler", url: "/transactions" },
+      { title: "Tekrarlayan", url: "/transactions/recurring" },
+    ],
+  },
   { title: "Faturalar", url: "/invoices", icon: FileText },
   { title: "Fisler", url: "/receipts", icon: Receipt },
   {
