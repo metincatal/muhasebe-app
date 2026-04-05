@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -100,9 +100,10 @@ const managementItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const { user, organization, role } = useAuthStore();
+  const menuRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -116,7 +117,17 @@ export function AppSidebar() {
   });
 
   function toggleMenu(url: string) {
-    setOpenMenus((prev) => ({ ...prev, [url]: !prev[url] }));
+    const opening = !openMenus[url];
+    setOpenMenus((prev) => ({ ...prev, [url]: opening }));
+    if (opening) {
+      setTimeout(() => {
+        menuRefs.current[url]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 150);
+    }
+  }
+
+  function closeMobile() {
+    if (isMobile) setOpenMobile(false);
   }
 
   const initials = user?.fullName
@@ -185,7 +196,7 @@ export function AppSidebar() {
                 if (item.children) {
                   return (
                     <Collapsible key={item.url} open={!!openMenus[item.url]} onOpenChange={() => toggleMenu(item.url)} className="group/collapsible">
-                      <SidebarMenuItem>
+                      <SidebarMenuItem ref={(el) => { menuRefs.current[item.url] = el; }}>
                         <CollapsibleTrigger
                           render={
                             <SidebarMenuButton
@@ -216,6 +227,7 @@ export function AppSidebar() {
                                     render={<Link href={child.url} />}
                                     isActive={childActive}
                                     className={cn(childActive && "font-medium")}
+                                    onClick={closeMobile}
                                   >
                                     <span>{child.title}</span>
                                   </SidebarMenuSubButton>
@@ -238,6 +250,7 @@ export function AppSidebar() {
                         "transition-all duration-200",
                         active && "nav-active-bar font-medium"
                       )}
+                      onClick={closeMobile}
                     >
                       <item.icon
                         className={cn(
@@ -268,7 +281,7 @@ export function AppSidebar() {
                 if (item.children) {
                   return (
                     <Collapsible key={item.url} open={!!openMenus[item.url]} onOpenChange={() => toggleMenu(item.url)} className="group/collapsible">
-                      <SidebarMenuItem>
+                      <SidebarMenuItem ref={(el) => { menuRefs.current[item.url] = el; }}>
                         <CollapsibleTrigger
                           render={
                             <SidebarMenuButton
@@ -299,6 +312,7 @@ export function AppSidebar() {
                                     render={<Link href={child.url} />}
                                     isActive={childActive}
                                     className={cn(childActive && "font-medium")}
+                                    onClick={closeMobile}
                                   >
                                     <span>{child.title}</span>
                                   </SidebarMenuSubButton>
@@ -321,6 +335,7 @@ export function AppSidebar() {
                         "transition-all duration-200",
                         active && "nav-active-bar font-medium"
                       )}
+                      onClick={closeMobile}
                     >
                       <item.icon
                         className={cn(
@@ -344,7 +359,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <Collapsible open={!!openMenus["/settings"]} onOpenChange={() => toggleMenu("/settings")} className="group/collapsible">
-                <SidebarMenuItem>
+                <SidebarMenuItem ref={(el) => { menuRefs.current["/settings"] = el; }}>
                   <CollapsibleTrigger
                     render={
                       <SidebarMenuButton
@@ -379,6 +394,7 @@ export function AppSidebar() {
                               render={<Link href={child.url} />}
                               isActive={childActive}
                               className={cn(childActive && "font-medium")}
+                              onClick={closeMobile}
                             >
                               <span>{child.title}</span>
                             </SidebarMenuSubButton>

@@ -273,45 +273,19 @@ export default function BudgetsPage() {
               {items.map((item) => {
                 const isEditing = editState?.categoryId === item.category_id;
                 return (
-                  <div key={item.category_id} className="flex items-center gap-4 px-6 py-4">
-                    {/* Category dot + name */}
-                    <div className="flex items-center gap-2.5 w-40 shrink-0">
+                  <div key={item.category_id} className="px-4 sm:px-6 py-3.5 space-y-2">
+                    {/* Üst satır: kategori adı + bütçe butonu/input */}
+                    <div className="flex items-center gap-2">
                       <div
-                        className="h-3 w-3 rounded-full shrink-0"
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: item.category_color }}
                       />
-                      <span className="text-sm font-medium truncate">{item.category_name}</span>
-                    </div>
-
-                    {/* Progress section */}
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{formatCurrency(item.actual_amount)} harcandi</span>
-                        {item.budget_amount > 0 ? (
-                          <span className={item.is_over ? "text-destructive font-medium" : ""}>
-                            {formatCurrency(item.budget_amount)} butce
-                            {item.is_over && (
-                              <span className="ml-1 text-destructive font-semibold">
-                                (%{Math.round(item.percentage)} asim)
-                              </span>
-                            )}
-                            {!item.is_over && item.budget_amount > 0 && (
-                              <span className="ml-1">
-                                (%{Math.round(item.percentage)})
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="italic">butce yok</span>
-                        )}
-                      </div>
-                      <ProgressBar percentage={item.percentage} isOver={item.is_over} />
-                    </div>
-
-                    {/* Budget input / edit */}
-                    <div className="w-40 shrink-0">
+                      <span className="text-sm font-medium flex-1 min-w-0 truncate">
+                        {item.category_name}
+                      </span>
+                      {/* Bütçe edit alanı */}
                       {isEditing ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0">
                           <Input
                             ref={inputRef}
                             type="number"
@@ -328,7 +302,7 @@ export default function BudgetsPage() {
                               if (e.key === "Enter") saveEdit(item);
                               if (e.key === "Escape") cancelEdit();
                             }}
-                            className="h-8 text-sm"
+                            className="h-8 w-28 text-sm"
                             disabled={editState.saving}
                           />
                           <Button
@@ -358,7 +332,7 @@ export default function BudgetsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-full justify-between text-sm font-normal group"
+                          className="h-7 px-2 shrink-0 text-xs font-normal group"
                           onClick={() => startEdit(item)}
                         >
                           <span className={item.budget_amount === 0 ? "text-muted-foreground/60 italic" : ""}>
@@ -366,9 +340,26 @@ export default function BudgetsPage() {
                               ? formatCurrency(item.budget_amount)
                               : "Butce gir..."}
                           </span>
-                          <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                          <Pencil className="ml-1 h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
                         </Button>
                       )}
+                    </div>
+
+                    {/* Alt satır: harcama bilgisi + progress bar */}
+                    <div className="pl-4 space-y-1">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{formatCurrency(item.actual_amount)} harcandi</span>
+                        {item.budget_amount > 0 ? (
+                          <span className={item.is_over ? "text-destructive font-medium" : ""}>
+                            {item.is_over
+                              ? `%${Math.round(item.percentage)} asim`
+                              : `%${Math.round(item.percentage)}`}
+                          </span>
+                        ) : (
+                          <span className="italic">butce yok</span>
+                        )}
+                      </div>
+                      <ProgressBar percentage={item.percentage} isOver={item.is_over} />
                     </div>
                   </div>
                 );
