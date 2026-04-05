@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { transactionSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/actions/audit-log";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const PAGE_SIZE = 50;
 
@@ -118,6 +119,8 @@ export async function createTransaction(input: {
     record_id: data.id,
     new_data: data as Record<string, unknown>,
   });
+
+  await dispatchWebhook(input.organization_id, "transaction.created", data as Record<string, unknown>);
 
   revalidatePath("/transactions");
   revalidatePath("/");
