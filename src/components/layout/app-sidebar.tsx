@@ -45,6 +45,7 @@ import {
   User,
   ChevronRight,
   Calculator,
+  Target,
 } from "lucide-react";
 import {
   Collapsible,
@@ -68,6 +69,7 @@ const navItems = [
   { title: "Faturalar", url: "/invoices", icon: FileText },
   { title: "Fisler", url: "/receipts", icon: Receipt },
   { title: "KDV Takvimi", url: "/tax", icon: Calculator },
+  { title: "Butce", url: "/budgets", icon: Target },
   {
     title: "Raporlar",
     url: "/reports",

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getOverBudgetCategories } from "@/lib/actions/budgets";
 
 export async function getVATSummary(orgId: string, year: number, month: number) {
   const supabase = await createClient();
@@ -81,7 +82,7 @@ export async function getVATSummary(orgId: string, year: number, month: number) 
 }
 
 export interface DashboardAlert {
-  type: "overdue_invoices" | "vat_deadline" | "recurring_due";
+  type: "overdue_invoices" | "vat_deadline" | "recurring_due" | "budget_exceeded";
   severity: "error" | "warning" | "info";
   title: string;
   description: string;
@@ -154,6 +155,20 @@ export async function getDashboardAlerts(orgId: string): Promise<DashboardAlert[
         ? `"${recurringDue[0].description}" bugun otomatik kaydedilmeyi bekliyor.`
         : `${recurringDue.map((r) => `"${r.description}"`).slice(0, 2).join(", ")}${recurringDue.length > 2 ? ` ve ${recurringDue.length - 2} diger` : ""} bugun otomatik kaydedilmeyi bekliyor.`,
       href: "/transactions/recurring",
+    });
+  }
+
+  // 4. Bütçesi aşılan kategoriler (bu ay)
+  const overBudget = await getOverBudgetCategories(orgId, now.getFullYear(), now.getMonth() + 1);
+  if (overBudget.length > 0) {
+    const names = overBudget.slice(0, 2).map((c) => `"${c.name}"`).join(", ");
+    const extra = overBudget.length > 2 ? ` ve ${overBudget.length - 2} diger` : "";
+    alerts.push({
+      type: "budget_exceeded",
+      severity: "warning",
+      title: `${overBudget.length} kategori butcesini asti`,
+      description: `${names}${extra} bu ay icin tanimlanan butceyi gecti.`,
+      href: "/budgets",
     });
   }
 
