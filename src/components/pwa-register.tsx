@@ -23,8 +23,14 @@ export function PwaRegister() {
       .then((registration) => {
         // Sayfa yüklendiğinde zaten bekleyen bir SW var mı?
         if (registration.waiting) {
-          setWaitingSW(registration.waiting);
-          setShowUpdate(true);
+          if (navigator.serviceWorker.controller) {
+            // Güncelleme var — kullanıcıya sor
+            setWaitingSW(registration.waiting);
+            setShowUpdate(true);
+          } else {
+            // İlk kurulum takılı kalmış — hemen aktive et
+            registration.waiting.postMessage("SKIP_WAITING");
+          }
         }
 
         // Yeni SW indirilmeye başlarsa
@@ -33,10 +39,15 @@ export function PwaRegister() {
           if (!newSW) return;
 
           newSW.addEventListener("statechange", () => {
-            // Yeni SW kuruldu, aktivasyon için bekliyor
-            if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-              setWaitingSW(newSW);
-              setShowUpdate(true);
+            if (newSW.state === "installed") {
+              if (navigator.serviceWorker.controller) {
+                // Güncelleme var — kullanıcıya sor
+                setWaitingSW(newSW);
+                setShowUpdate(true);
+              } else {
+                // İlk kurulum — hemen aktive et
+                newSW.postMessage("SKIP_WAITING");
+              }
             }
           });
         });
