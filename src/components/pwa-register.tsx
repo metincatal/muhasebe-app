@@ -18,38 +18,43 @@ export function PwaRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
+    function trackSW(sw: ServiceWorker) {
+      sw.addEventListener("statechange", () => {
+        if (sw.state === "installed") {
+          if (navigator.serviceWorker.controller) {
+            setWaitingSW(sw);
+            setShowUpdate(true);
+          } else {
+            sw.postMessage("SKIP_WAITING");
+          }
+        }
+      });
+    }
+
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .then((registration) => {
-        // Sayfa yüklendiğinde zaten bekleyen bir SW var mı?
+        // Zaten waiting durumunda SW var mı? (önceki sayfadan kalan)
         if (registration.waiting) {
           if (navigator.serviceWorker.controller) {
-            // Güncelleme var — kullanıcıya sor
             setWaitingSW(registration.waiting);
             setShowUpdate(true);
           } else {
-            // İlk kurulum takılı kalmış — hemen aktive et
             registration.waiting.postMessage("SKIP_WAITING");
           }
+          return;
         }
 
-        // Yeni SW indirilmeye başlarsa
-        registration.addEventListener("updatefound", () => {
-          const newSW = registration.installing;
-          if (!newSW) return;
+        // Listener eklenmeden önce zaten installing başlamış olabilir
+        if (registration.installing) {
+          trackSW(registration.installing);
+        }
 
-          newSW.addEventListener("statechange", () => {
-            if (newSW.state === "installed") {
-              if (navigator.serviceWorker.controller) {
-                // Güncelleme var — kullanıcıya sor
-                setWaitingSW(newSW);
-                setShowUpdate(true);
-              } else {
-                // İlk kurulum — hemen aktive et
-                newSW.postMessage("SKIP_WAITING");
-              }
-            }
-          });
+        // Gelecekteki güncellemeler için
+        registration.addEventListener("updatefound", () => {
+          if (registration.installing) {
+            trackSW(registration.installing);
+          }
         });
       })
       .catch((err) => console.error("SW registration failed:", err));
