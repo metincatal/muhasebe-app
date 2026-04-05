@@ -1,11 +1,11 @@
-const CACHE_NAME = "muhasebe-pro-v1";
+const CACHE_NAME = "muhasebe-pro-v3";
 
 const STATIC_ASSETS = ["/offline"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {});
+      return cache.addAll(STATIC_ASSETS).catch(() => { });
     })
   );
   // skipWaiting burada çağrılmıyor — güncelleme bildirimi için kullanıcı onayı bekleniyor
