@@ -15,10 +15,14 @@ import {
   ScanLine,
   ArrowRight,
   Loader2,
+  AlertTriangle,
+  Info,
+  XCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
 import { getDashboardSummary, getTransactions } from "@/lib/actions/transactions";
+import { getDashboardAlerts, type DashboardAlert } from "@/lib/actions/tax";
 
 interface DashboardData {
   totalIncome: number;
@@ -42,6 +46,7 @@ export default function DashboardPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
   const [summary, setSummary] = useState<DashboardData | null>(null);
   const [recentTx, setRecentTx] = useState<Transaction[]>([]);
+  const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,12 +58,14 @@ export default function DashboardPage() {
         // Doviz kurlarini arka planda DB'ye upsert et
         fetch("/api/exchange-rates").catch(() => {});
 
-        const [summaryData, txData] = await Promise.all([
+        const [summaryData, txData, alertData] = await Promise.all([
           getDashboardSummary(organization!.id),
           getTransactions(organization!.id, { limit: 5 }),
+          getDashboardAlerts(organization!.id),
         ]);
         setSummary(summaryData);
         setRecentTx(txData as Transaction[]);
+        setAlerts(alertData);
       } catch (err) {
         console.error("Dashboard load error:", err);
       } finally {
@@ -108,6 +115,40 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Alerts */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((alert) => {
+            const bgClass =
+              alert.severity === "error"
+                ? "bg-destructive/5 border-destructive/30 text-destructive"
+                : alert.severity === "warning"
+                ? "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800/30 dark:text-amber-400"
+                : "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/20 dark:border-blue-800/30 dark:text-blue-400";
+            const Icon =
+              alert.severity === "error"
+                ? XCircle
+                : alert.severity === "warning"
+                ? AlertTriangle
+                : Info;
+            return (
+              <div key={alert.type} className={`flex items-start gap-3 p-3 rounded-xl border ${bgClass}`}>
+                <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{alert.title}</p>
+                  <p className="text-xs opacity-80 mt-0.5">{alert.description}</p>
+                </div>
+                {alert.href && (
+                  <Link href={alert.href} className="text-xs font-medium underline underline-offset-2 shrink-0 opacity-80 hover:opacity-100">
+                    Incele
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

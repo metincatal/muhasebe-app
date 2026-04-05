@@ -44,6 +44,24 @@ export async function getInvoices(orgId: string, filters?: {
     return [];
   }
 
+  // Vadesi geçmiş "sent" faturaları lazy olarak "overdue" yap
+  const today = new Date().toISOString().split("T")[0];
+  const overdueIds = (data ?? [])
+    .filter((inv) => inv.status === "sent" && inv.due_date && inv.due_date < today)
+    .map((inv) => inv.id);
+
+  if (overdueIds.length > 0) {
+    await supabase
+      .from("invoices")
+      .update({ status: "overdue" })
+      .in("id", overdueIds);
+
+    // Dönen datayı da güncelle
+    data!.forEach((inv) => {
+      if (overdueIds.includes(inv.id)) inv.status = "overdue";
+    });
+  }
+
   return data;
 }
 

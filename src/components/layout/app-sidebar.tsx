@@ -44,6 +44,7 @@ import {
   ChevronsUpDown,
   User,
   ChevronRight,
+  Calculator,
 } from "lucide-react";
 import {
   Collapsible,
@@ -66,6 +67,7 @@ const navItems = [
   },
   { title: "Faturalar", url: "/invoices", icon: FileText },
   { title: "Fisler", url: "/receipts", icon: Receipt },
+  { title: "KDV Takvimi", url: "/tax", icon: Calculator },
   {
     title: "Raporlar",
     url: "/reports",
