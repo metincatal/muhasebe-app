@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw } from "lucide-react";
 
@@ -9,64 +9,49 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const VERSION_KEY = "app_version";
+const POLL_INTERVAL = 5 * 60 * 1000; // 5 dakika
+
+async function fetchVersion(): Promise<string | null> {
+  try {
+    const res = await fetch("/api/version", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.version ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function PwaRegister() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstall, setShowInstall] = useState(false);
-  const [waitingSW, setWaitingSW] = useState<ServiceWorker | null>(null);
   const [showUpdate, setShowUpdate] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
+  // Versiyon kontrolü — değişmişse bildirim göster
+  async function checkForUpdate() {
+    const latest = await fetchVersion();
+    if (!latest || latest === "dev") return;
 
-    function trackSW(sw: ServiceWorker) {
-      sw.addEventListener("statechange", () => {
-        if (sw.state === "installed") {
-          if (navigator.serviceWorker.controller) {
-            setWaitingSW(sw);
-            setShowUpdate(true);
-          } else {
-            sw.postMessage("SKIP_WAITING");
-          }
-        }
-      });
+    const stored = localStorage.getItem(VERSION_KEY);
+    if (!stored) {
+      localStorage.setItem(VERSION_KEY, latest);
+      return;
     }
 
-    navigator.serviceWorker
-      .register("/sw.js", { scope: "/" })
-      .then((registration) => {
-        // Zaten waiting durumunda SW var mı? (önceki sayfadan kalan)
-        if (registration.waiting) {
-          if (navigator.serviceWorker.controller) {
-            setWaitingSW(registration.waiting);
-            setShowUpdate(true);
-          } else {
-            registration.waiting.postMessage("SKIP_WAITING");
-          }
-          return;
-        }
+    if (stored !== latest) {
+      setShowUpdate(true);
+    }
+  }
 
-        // Listener eklenmeden önce zaten installing başlamış olabilir
-        if (registration.installing) {
-          trackSW(registration.installing);
-        }
-
-        // Gelecekteki güncellemeler için
-        registration.addEventListener("updatefound", () => {
-          if (registration.installing) {
-            trackSW(registration.installing);
-          }
-        });
-      })
-      .catch((err) => console.error("SW registration failed:", err));
-
-    // SW aktif olunca sayfayı yenile
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    });
+  useEffect(() => {
+    // SW'yi sessizce kaydet (offline destek için)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        .catch(() => {});
+    }
 
     // "Ana ekrana ekle" prompt'unu yakala
     const handler = (e: Event) => {
@@ -74,9 +59,26 @@ export function PwaRegister() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstall(true);
     };
-
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+
+    // Sayfa yüklenince ilk kontrol
+    checkForUpdate();
+
+    // Periyodik polling
+    pollingRef.current = setInterval(checkForUpdate, POLL_INTERVAL);
+
+    // Sekmeye dönünce kontrol et
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") checkForUpdate();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleInstall() {
@@ -90,9 +92,11 @@ export function PwaRegister() {
   }
 
   function handleUpdate() {
-    if (!waitingSW) return;
-    waitingSW.postMessage("SKIP_WAITING");
-    setShowUpdate(false);
+    // Yeni versiyonu kaydet, sayfayı yenile
+    fetchVersion().then((v) => {
+      if (v) localStorage.setItem(VERSION_KEY, v);
+      window.location.reload();
+    });
   }
 
   return (

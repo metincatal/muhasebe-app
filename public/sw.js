@@ -1,4 +1,4 @@
-const CACHE_NAME = "muhasebe-pro-v3";
+const CACHE_NAME = "muhasebe-pro-v8";
 
 const STATIC_ASSETS = ["/offline"];
 
