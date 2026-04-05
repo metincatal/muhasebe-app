@@ -187,7 +187,7 @@ export default function ScanReceiptPage() {
       currency,
       category_id: categoryId || undefined,
       ocr_raw_text: ocrResult?.raw_text || undefined,
-      ocr_parsed_data: ocrResult as unknown as Record<string, unknown> || undefined,
+      ocr_parsed_data: ocrResult ?? undefined,
       created_by: user.id,
     });
 

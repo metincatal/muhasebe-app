@@ -1,5 +1,5 @@
 // OCR types
-export interface ReceiptOCRResult {
+export interface ReceiptOCRResult extends Record<string, unknown> {
   vendor_name: string | null;
   date: string | null;
   items: ReceiptItem[];

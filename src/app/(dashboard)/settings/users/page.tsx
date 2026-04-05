@@ -110,9 +110,12 @@ export default function UsersSettingsPage() {
         getInvitations(organization.id),
       ]);
       setMembers(
-        (membersData as unknown as Member[]).map((m) => ({
-          ...m,
-          user_profiles: m.user_profiles as unknown as Member["user_profiles"],
+        membersData.map((m) => ({
+          id: m.id,
+          role: m.role,
+          created_at: m.created_at,
+          user_id: m.user_id,
+          user_profiles: m.user_profiles as Member["user_profiles"],
         }))
       );
       setInvitations(invitationsData as Invitation[]);

@@ -32,7 +32,8 @@ export async function getProfitLossReport(orgId: string, year: number, month?: n
 
   (transactions || []).forEach((tx) => {
     const amt = Number(tx.amount_in_base || tx.amount);
-    const cat = tx.categories as unknown as { name: string; color: string } | null;
+    const rawCat = Array.isArray(tx.categories) ? tx.categories[0] : tx.categories;
+    const cat: { name: string; color: string } | null = rawCat ?? null;
     const catName = cat?.name || "Kategorisiz";
     const catColor = cat?.color || "#6b7280";
     const catId = tx.category_id || "uncategorized";
@@ -199,7 +200,8 @@ export async function getComparisonReport(orgId: string, year1: number, year2: n
 
     (transactions || []).forEach((tx) => {
       const amt = Number(tx.amount_in_base || tx.amount);
-      const cat = tx.categories as unknown as { name: string; color: string } | null;
+      const rawCat = Array.isArray(tx.categories) ? tx.categories[0] : tx.categories;
+    const cat: { name: string; color: string } | null = rawCat ?? null;
       const catName = cat?.name || "Kategorisiz";
       const catColor = cat?.color || "#6b7280";
       const catId = tx.category_id || "uncategorized";
