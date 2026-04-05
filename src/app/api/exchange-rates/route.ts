@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { fetchTCMBRates } from "@/lib/exchange-rates/tcmb";
-import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
     const rates = await fetchTCMBRates();
 
-    // DB'ye upsert et (best-effort, hata olursa sessizce gec)
+    // Service role ile DB'ye yaz (RLS'i atlar)
     try {
-      const supabase = await createClient();
+      const supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
       const today = new Date().toISOString().split("T")[0];
       const rows = rates.map((r) => ({
         base_currency: "TRY",
@@ -17,11 +20,12 @@ export async function GET() {
         date: today,
         source: "tcmb",
       }));
-      await supabase.from("exchange_rates").upsert(rows, {
+      const { error } = await supabase.from("exchange_rates").upsert(rows, {
         onConflict: "base_currency,target_currency,date",
       });
-    } catch {
-      // DB yazma basarisiz olsa da API cevabi donmeye devam et
+      if (error) console.error("Exchange rates upsert error:", error);
+    } catch (err) {
+      console.error("Exchange rates DB write error:", err);
     }
 
     return NextResponse.json(rates);
