@@ -387,6 +387,8 @@ export function AppSidebar() {
                         { title: "Genel", url: "/settings" },
                         { title: "Kullanicilar", url: "/settings/users" },
                         { title: "Doviz Kurlari", url: "/settings/currencies" },
+                        { title: "Islem Gunlugu", url: "/settings/audit-log" },
+                        { title: "API & Entegrasyon", url: "/settings/api" },
                       ].map((child) => {
                         const childActive = pathname === child.url;
                         return (

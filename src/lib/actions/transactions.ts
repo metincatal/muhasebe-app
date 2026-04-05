@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { transactionSchema } from "@/lib/validations";
+import { logAudit } from "@/lib/actions/audit-log";
 
 const PAGE_SIZE = 50;
 
@@ -110,6 +111,14 @@ export async function createTransaction(input: {
     return { error: error.message };
   }
 
+  await logAudit({
+    organization_id: input.organization_id,
+    action: "create",
+    table_name: "transactions",
+    record_id: data.id,
+    new_data: data as Record<string, unknown>,
+  });
+
   revalidatePath("/transactions");
   revalidatePath("/");
   return { data };
@@ -117,6 +126,12 @@ export async function createTransaction(input: {
 
 export async function deleteTransaction(id: string) {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("id", id)
+    .single();
 
   const { error } = await supabase
     .from("transactions")
@@ -126,6 +141,16 @@ export async function deleteTransaction(id: string) {
   if (error) {
     console.error("deleteTransaction error:", error);
     return { error: error.message };
+  }
+
+  if (existing) {
+    await logAudit({
+      organization_id: existing.organization_id,
+      action: "delete",
+      table_name: "transactions",
+      record_id: id,
+      old_data: existing as Record<string, unknown>,
+    });
   }
 
   revalidatePath("/transactions");

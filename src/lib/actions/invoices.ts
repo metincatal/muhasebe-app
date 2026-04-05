@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { invoiceSchema } from "@/lib/validations";
+import { logAudit } from "@/lib/actions/audit-log";
 
 const PAGE_SIZE = 50;
 
@@ -160,6 +161,14 @@ export async function createInvoice(input: {
     return { error: itemsError.message };
   }
 
+  await logAudit({
+    organization_id: input.organization_id,
+    action: "create",
+    table_name: "invoices",
+    record_id: invoice.id,
+    new_data: invoice as Record<string, unknown>,
+  });
+
   revalidatePath("/invoices");
   revalidatePath("/");
   return { data: invoice };
@@ -167,6 +176,12 @@ export async function createInvoice(input: {
 
 export async function updateInvoiceStatus(id: string, status: string) {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("organization_id, status")
+    .eq("id", id)
+    .single();
 
   const { error } = await supabase
     .from("invoices")
@@ -177,12 +192,29 @@ export async function updateInvoiceStatus(id: string, status: string) {
     return { error: error.message };
   }
 
+  if (existing) {
+    await logAudit({
+      organization_id: existing.organization_id,
+      action: "update",
+      table_name: "invoices",
+      record_id: id,
+      old_data: { status: existing.status },
+      new_data: { status },
+    });
+  }
+
   revalidatePath("/invoices");
   return { success: true };
 }
 
 export async function deleteInvoice(id: string) {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("organization_id, invoice_number, counterparty_name, total")
+    .eq("id", id)
+    .single();
 
   const { error } = await supabase
     .from("invoices")
@@ -191,6 +223,16 @@ export async function deleteInvoice(id: string) {
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (existing) {
+    await logAudit({
+      organization_id: existing.organization_id,
+      action: "delete",
+      table_name: "invoices",
+      record_id: id,
+      old_data: existing as Record<string, unknown>,
+    });
   }
 
   revalidatePath("/invoices");
