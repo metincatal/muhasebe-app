@@ -50,6 +50,9 @@ export default function DashboardPage() {
     async function load() {
       setLoading(true);
       try {
+        // Doviz kurlarini arka planda DB'ye upsert et
+        fetch("/api/exchange-rates").catch(() => {});
+
         const [summaryData, txData] = await Promise.all([
           getDashboardSummary(organization!.id),
           getTransactions(organization!.id, { limit: 5 }),
