@@ -8,7 +8,13 @@ self.addEventListener("install", (event) => {
       return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
-  self.skipWaiting();
+  // skipWaiting burada çağrılmıyor — güncelleme bildirimi için kullanıcı onayı bekleniyor
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {
