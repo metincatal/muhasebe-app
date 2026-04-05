@@ -101,7 +101,7 @@ export async function getBalanceSheet(orgId: string, asOfDate?: string) {
   // Tum islemleri getir
   const { data: transactions } = await supabase
     .from("transactions")
-    .select("type, amount, amount_in_base, category_id, categories(name)")
+    .select("type, amount, amount_in_base")
     .eq("organization_id", orgId)
     .lte("date", dateFilter);
 
@@ -110,6 +110,24 @@ export async function getBalanceSheet(orgId: string, asOfDate?: string) {
     .from("bank_accounts")
     .select("bank_name, balance, currency, is_active")
     .eq("organization_id", orgId);
+
+  // Odenmemis satis faturalari = alacak (aktif)
+  const { data: salesInvoices } = await supabase
+    .from("invoices")
+    .select("total, currency, exchange_rate")
+    .eq("organization_id", orgId)
+    .eq("type", "sales")
+    .in("status", ["sent", "overdue"])
+    .lte("date", dateFilter);
+
+  // Odenmemis alis faturalari = borc (pasif)
+  const { data: purchaseInvoices } = await supabase
+    .from("invoices")
+    .select("total, currency, exchange_rate")
+    .eq("organization_id", orgId)
+    .eq("type", "purchase")
+    .in("status", ["sent", "overdue", "draft"])
+    .lte("date", dateFilter);
 
   let totalIncome = 0;
   let totalExpense = 0;
@@ -122,6 +140,22 @@ export async function getBalanceSheet(orgId: string, asOfDate?: string) {
 
   const totalBankBalance = (bankAccounts || []).reduce((sum, a) => sum + Number(a.balance), 0);
 
+  // Alacaklar: odenmemis satis faturalarinin TRY karsılığı
+  const totalReceivables = (salesInvoices || []).reduce((sum, inv) => {
+    const rate = Number(inv.exchange_rate || 1);
+    return sum + Number(inv.total) * rate;
+  }, 0);
+
+  // Borclar: odenmemis alis faturalarinin TRY karsılığı
+  const totalPayables = (purchaseInvoices || []).reduce((sum, inv) => {
+    const rate = Number(inv.exchange_rate || 1);
+    return sum + Number(inv.total) * rate;
+  }, 0);
+
+  const totalAssets = totalBankBalance + totalReceivables;
+  const retainedEarnings = totalIncome - totalExpense;
+  const totalEquity = totalAssets - totalPayables;
+
   return {
     assets: {
       bankAccounts: (bankAccounts || []).map((a) => ({
@@ -131,14 +165,16 @@ export async function getBalanceSheet(orgId: string, asOfDate?: string) {
         isActive: a.is_active,
       })),
       totalBankBalance,
-      totalAssets: totalBankBalance,
+      totalReceivables,
+      totalAssets,
     },
     liabilities: {
-      totalLiabilities: 0,
+      totalPayables,
+      totalLiabilities: totalPayables,
     },
     equity: {
-      retainedEarnings: totalIncome - totalExpense,
-      totalEquity: totalIncome - totalExpense,
+      retainedEarnings,
+      totalEquity,
     },
     totalIncome,
     totalExpense,

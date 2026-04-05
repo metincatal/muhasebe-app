@@ -179,3 +179,25 @@ export async function deleteInvoice(id: string) {
   revalidatePath("/");
   return { success: true };
 }
+
+export async function getInvoiceWithItems(id: string) {
+  const supabase = await createClient();
+
+  const { data: invoice, error } = await supabase
+    .from("invoices")
+    .select("*, invoice_items(*)")
+    .eq("id", id)
+    .single();
+
+  if (error || !invoice) {
+    return { error: error?.message || "Fatura bulunamadi" };
+  }
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name, tax_id, tax_office, address, phone, email")
+    .eq("id", invoice.organization_id)
+    .single();
+
+  return { data: { invoice, org } };
+}

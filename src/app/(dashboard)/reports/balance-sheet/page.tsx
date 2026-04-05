@@ -33,9 +33,11 @@ interface BalanceSheetData {
   assets: {
     bankAccounts: { name: string; balance: number; currency: string; isActive: boolean }[];
     totalBankBalance: number;
+    totalReceivables: number;
     totalAssets: number;
   };
   liabilities: {
+    totalPayables: number;
     totalLiabilities: number;
   };
   equity: {
@@ -88,10 +90,12 @@ export default function BalanceSheetPage() {
       ["  A. Donen Varliklar", fmtNum(data!.assets.totalAssets)],
       ["    Banka Hesaplari", fmtNum(data!.assets.totalBankBalance)],
       ...data!.assets.bankAccounts.map((a) => [`      ${a.name}`, fmtNum(a.balance)]),
+      ["    Ticari Alacaklar", fmtNum(data!.assets.totalReceivables)],
       ["TOPLAM VARLIKLAR", fmtNum(data!.assets.totalAssets)],
       ["", ""],
       ["II. KAYNAKLAR (PASIF)", ""],
       ["  A. Yabanci Kaynaklar", fmtNum(data!.liabilities.totalLiabilities)],
+      ["    Ticari Borclar", fmtNum(data!.liabilities.totalPayables)],
       ["  B. Ozkaynaklar", fmtNum(data!.equity.totalEquity)],
       ["    Gecmis Yillar Kar/Zarar", fmtNum(data!.equity.retainedEarnings)],
       ["TOPLAM KAYNAKLAR", fmtNum(data!.liabilities.totalLiabilities + data!.equity.totalEquity)],
@@ -230,6 +234,17 @@ export default function BalanceSheetPage() {
                 </TableRow>
               ))}
 
+              {data.assets.totalReceivables > 0 && (
+                <TableRow>
+                  <TableCell className="text-sm pl-10 text-muted-foreground">
+                    Ticari Alacaklar (Odenmemis Satis Faturalari)
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-sm">
+                    {formatCurrency(data.assets.totalReceivables)}
+                  </TableCell>
+                </TableRow>
+              )}
+
               <TableRow className="border-t-2 bg-success/10">
                 <TableCell className="font-bold text-sm pl-6">TOPLAM VARLIKLAR</TableCell>
                 <TableCell className="text-right font-bold tabular-nums text-success">
@@ -252,9 +267,11 @@ export default function BalanceSheetPage() {
               </TableRow>
 
               <TableRow>
-                <TableCell className="text-sm pl-10 text-muted-foreground">Kisa Vadeli Borclar</TableCell>
+                <TableCell className="text-sm pl-10 text-muted-foreground">
+                  Ticari Borclar (Odenmemis Alis Faturalari)
+                </TableCell>
                 <TableCell className="text-right tabular-nums text-sm">
-                  {formatCurrency(0)}
+                  {formatCurrency(data.liabilities.totalPayables)}
                 </TableCell>
               </TableRow>
 

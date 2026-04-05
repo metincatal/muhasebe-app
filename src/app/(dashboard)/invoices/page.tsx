@@ -38,11 +38,13 @@ import {
   CheckCircle,
   Trash2,
   FileText,
+  Download,
   Loader2,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
-import { getInvoices, updateInvoiceStatus, deleteInvoice } from "@/lib/actions/invoices";
+import { getInvoices, updateInvoiceStatus, deleteInvoice, getInvoiceWithItems } from "@/lib/actions/invoices";
+import { generateInvoicePdf } from "@/lib/pdf/invoice";
 import { toast } from "sonner";
 
 interface Invoice {
@@ -128,6 +130,15 @@ export default function InvoicesPage() {
       toast.success(`Fatura durumu: ${statusLabels[status]}`);
       loadInvoices(true);
     }
+  }
+
+  async function handleDownloadPdf(id: string) {
+    const result = await getInvoiceWithItems(id);
+    if (result.error || !result.data) {
+      toast.error("PDF olusturulamadi");
+      return;
+    }
+    generateInvoicePdf(result.data.invoice, result.data.org);
   }
 
   async function handleDelete(id: string) {
@@ -285,6 +296,13 @@ export default function InvoicesPage() {
                           <DropdownMenuItem className="cursor-pointer">
                             <Eye className="mr-2 h-4 w-4" />
                             Goruntule
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => handleDownloadPdf(inv.id)}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            PDF Indir
                           </DropdownMenuItem>
                           {inv.status === "draft" && (
                             <DropdownMenuItem

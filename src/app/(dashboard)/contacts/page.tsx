@@ -35,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 import {
   Plus,
   Search,
@@ -48,6 +49,7 @@ import {
   Loader2,
   Phone,
   Mail,
+  ExternalLink,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { getContacts, createContact, deleteContact } from "@/lib/actions/contacts";
@@ -266,7 +268,12 @@ export default function ContactsPage() {
                 {contacts.map((contact) => (
                   <TableRow key={contact.id} className="group">
                     <TableCell>
-                      <p className="font-medium text-sm">{contact.name}</p>
+                      <Link href={`/contacts/${contact.id}`} className="group/link">
+                        <p className="font-medium text-sm group-hover/link:text-primary transition-colors flex items-center gap-1">
+                          {contact.name}
+                          <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-60 transition-opacity" />
+                        </p>
+                      </Link>
                       {contact.tax_office && (
                         <p className="text-xs text-muted-foreground">{contact.tax_office}</p>
                       )}
