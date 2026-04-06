@@ -1,7 +1,7 @@
 const roleLabels: Record<string, string> = {
-  admin: "Yonetici",
+  admin: "Yönetici",
   accountant: "Muhasebeci",
-  viewer: "Izleyici",
+  viewer: "İzleyici",
 };
 
 export async function sendInviteEmail({
@@ -21,73 +21,97 @@ export async function sendInviteEmail({
 
   if (!process.env.RESEND_API_KEY) {
     console.warn("RESEND_API_KEY not set, skipping email");
-    return { error: "RESEND_API_KEY yapilandirilmamis" };
+    return { error: "RESEND_API_KEY yapılandırılmamış" };
   }
 
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   const { data, error } = await resend.emails.send({
-    from: "Muhasebe Pro <onboarding@resend.dev>",
+    from: "Siyakat <noreply@siyakat.app>",
     to,
-    subject: `${orgName} - Muhasebe Pro'ya davet edildiniz`,
+    subject: `${orgName} ekibine davet edildiniz — Siyakat`,
     html: `
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:40px 20px;">
+<body style="margin:0;padding:0;background-color:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f0f0f;padding:48px 20px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
 
-          <!-- Header -->
+          <!-- Logo -->
           <tr>
-            <td style="background:linear-gradient(135deg,#334155,#1e293b);padding:32px 32px 24px;text-align:center;">
-              <div style="display:inline-block;width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#4f46e5);color:white;font-size:22px;font-weight:bold;line-height:48px;text-align:center;">M</div>
-              <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;font-weight:600;">Muhasebe Pro</h1>
-              <p style="color:#94a3b8;font-size:13px;margin:0;">Modern muhasebe yonetimi</p>
+            <td style="padding-bottom:32px;text-align:center;">
+              <span style="font-size:13px;font-weight:700;letter-spacing:4px;color:#6b7280;text-transform:uppercase;">SIYAKAT</span>
             </td>
           </tr>
 
-          <!-- Body -->
+          <!-- Card -->
           <tr>
-            <td style="padding:32px;">
-              <h2 style="color:#1e293b;font-size:18px;margin:0 0 16px;font-weight:600;">Davet Edildiniz</h2>
-              <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 8px;">
-                <strong>${inviterName}</strong> sizi <strong>${orgName}</strong> organizasyonuna
-                <strong>${roleLabel}</strong> olarak davet etti.
-              </p>
-              <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 24px;">
-                Asagidaki butona tiklayarak daveti kabul edebilir ve hesabinizi olusturabilirsiniz.
-              </p>
+            <td style="background-color:#1a1a1a;border-radius:16px;border:1px solid #2a2a2a;overflow:hidden;">
 
-              <!-- CTA Button -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center">
-                    <a href="${inviteUrl}" style="display:inline-block;background:linear-gradient(135deg,#334155,#1e293b);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.3px;">
-                      Daveti Kabul Et
-                    </a>
-                  </td>
-                </tr>
-              </table>
+              <!-- Top accent line -->
+              <tr>
+                <td style="height:3px;background:linear-gradient(90deg,#78716c,#d4a853,#78716c);"></td>
+              </tr>
 
-              <p style="color:#94a3b8;font-size:12px;line-height:1.5;margin:24px 0 0;text-align:center;">
-                Bu davet 7 gun icinde gecerliliğini yitirecektir.
-              </p>
-            </td>
-          </tr>
+              <!-- Header -->
+              <tr>
+                <td style="padding:40px 40px 32px;text-align:center;border-bottom:1px solid #2a2a2a;">
+                  <div style="display:inline-block;width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#292524,#1c1917);border:1px solid #3a3632;color:#d4a853;font-size:24px;font-weight:700;line-height:56px;text-align:center;margin-bottom:20px;">س</div>
+                  <h1 style="color:#f5f5f5;font-size:22px;margin:0 0 6px;font-weight:600;letter-spacing:-0.3px;">Ekibe Davet Edildiniz</h1>
+                  <p style="color:#6b7280;font-size:13px;margin:0;">Muhasebe yönetim platformu</p>
+                </td>
+              </tr>
 
-          <!-- Footer -->
-          <tr>
-            <td style="padding:16px 32px 24px;border-top:1px solid #f1f5f9;text-align:center;">
-              <p style="color:#94a3b8;font-size:11px;margin:0;">
-                Bu e-postayi beklemiyorsaniz guvende yok sayabilirsiniz.
-              </p>
+              <!-- Body -->
+              <tr>
+                <td style="padding:36px 40px;">
+                  <p style="color:#a3a3a3;font-size:14px;line-height:1.7;margin:0 0 8px;">
+                    <span style="color:#d4a853;font-weight:600;">${inviterName}</span>, sizi
+                    <span style="color:#f5f5f5;font-weight:600;">${orgName}</span> organizasyonuna
+                    <span style="color:#f5f5f5;font-weight:500;">${roleLabel}</span> olarak davet etti.
+                  </p>
+                  <p style="color:#6b7280;font-size:14px;line-height:1.7;margin:0 0 32px;">
+                    Aşağıdaki butona tıklayarak daveti kabul edebilir ve hesabınızı oluşturabilirsiniz.
+                  </p>
+
+                  <!-- CTA Button -->
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td align="center">
+                        <a href="${inviteUrl}" style="display:inline-block;background:linear-gradient(135deg,#d4a853,#b8893a);color:#0f0f0f;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:0.5px;">
+                          Daveti Kabul Et
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="color:#4b4b4b;font-size:12px;line-height:1.6;margin:28px 0 0;text-align:center;">
+                    Bu davet 7 gün içinde geçerliliğini yitirecektir.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Bottom accent line -->
+              <tr>
+                <td style="height:1px;background:#2a2a2a;"></td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding:20px 40px;text-align:center;">
+                  <p style="color:#4b4b4b;font-size:11px;margin:0;letter-spacing:0.3px;">
+                    Bu e-postayı beklemiyorsanız güvenle yok sayabilirsiniz. · siyakat.app
+                  </p>
+                </td>
+              </tr>
+
             </td>
           </tr>
 
