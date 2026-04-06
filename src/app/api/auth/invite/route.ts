@@ -111,7 +111,22 @@ export async function POST(request: NextRequest) {
     userId = userData.user.id;
   }
 
-  // 3. Organizasyona ekle
+  // 3. Trigger'ın otomatik oluşturduğu organizasyonu temizle.
+  //    on_auth_user_created trigger'ı her yeni kullanıcı için bir org + üyelik yaratıyor.
+  //    Davetli kullanıcı zaten var olan bir org'a katılacağından bu sahte org silinmeli.
+  const { data: autoMemberships } = await admin
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .neq("organization_id", invitation.organization_id);
+
+  if (autoMemberships && autoMemberships.length > 0) {
+    const autoOrgIds = autoMemberships.map((m) => m.organization_id);
+    await admin.from("organization_members").delete().eq("user_id", userId).neq("organization_id", invitation.organization_id);
+    await admin.from("organizations").delete().in("id", autoOrgIds);
+  }
+
+  // 4. Organizasyona ekle
   const { error: memberError } = await admin
     .from("organization_members")
     .insert({
@@ -127,7 +142,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: memberError.message }, { status: 500 });
   }
 
-  // 4. Daveti kabul edildi olarak işaretle
+  // 5. Daveti kabul edildi olarak işaretle
   await admin
     .from("invitations")
     .update({ accepted_at: new Date().toISOString() })
