@@ -1,83 +1,136 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Lock, User } from "lucide-react";
+import { Loader2, Lock, User, Mail } from "lucide-react";
 
 export default function InvitePage() {
   const params = useParams();
   const token = params.token as string;
+  const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
+  // Sayfa açılınca token'ı doğrula ve email'i göster
+  useEffect(() => {
+    async function validateToken() {
+      try {
+        const res = await fetch(`/api/auth/invite?token=${token}`);
+        const data = await res.json();
+        if (!res.ok || !data.email) {
+          setTokenValid(false);
+        } else {
+          setInvitedEmail(data.email);
+          setTokenValid(true);
+        }
+      } catch {
+        setTokenValid(false);
+      }
+    }
+    validateToken();
+  }, [token]);
+
   async function handleAcceptInvite(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Verify invitation token via API
-      const res = await fetch(`/api/auth/invite?token=${token}`);
-      const invitation = await res.json();
-
-      if (!res.ok || !invitation.email) {
-        toast.error("Gecersiz veya suresi dolmus davet");
-        return;
-      }
-
-      // Sign up with the invited email
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email: invitation.email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+      // Tüm işlemi server-side yap: kullanıcı oluştur + org'a ekle
+      const res = await fetch("/api/auth/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, full_name: fullName, password }),
       });
 
-      if (error) {
-        toast.error("Kayit basarisiz", { description: error.message });
+      let data: { success?: boolean; email?: string; error?: string };
+      try {
+        data = await res.json();
+      } catch {
+        toast.error("Sunucu hatasi. Lutfen tekrar deneyin.");
         return;
       }
 
-      // Kullaniciyi organizasyona ekle
-      if (signUpData.user) {
-        const acceptRes = await fetch("/api/auth/invite", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, user_id: signUpData.user.id }),
-        });
-
-        if (!acceptRes.ok) {
-          const err = await acceptRes.json();
-          toast.error("Organizasyona eklenemedi", { description: err.error });
-          return;
-        }
+      if (!res.ok || !data.success) {
+        toast.error("Kayit basarisiz", { description: data.error || "Bilinmeyen hata" });
+        return;
       }
 
-      toast.success("Kayit basarili! Hosgeldiniz.");
+      // Server kullanıcıyı oluşturdu, şimdi giriş yap
+      const email = data.email || invitedEmail;
+      if (!email) {
+        toast.error("Giris yapilamadi");
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        toast.error("Hesap olusturuldu fakat giris yapilamadi", {
+          description: "Lutfen giris sayfasindan giris yapin.",
+        });
+        router.push("/login");
+        return;
+      }
+
+      toast.success("Hosgeldiniz! Hesabiniz olusturuldu.");
       router.push("/");
       router.refresh();
-    } catch {
-      toast.error("Bir hata olustu");
+    } catch (err) {
+      console.error("Invite error:", err);
+      toast.error("Beklenmeyen bir hata olustu. Lutfen tekrar deneyin.");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (tokenValid === null) {
+    return (
+      <Card className="border-0 shadow-xl shadow-black/5">
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (tokenValid === false) {
+    return (
+      <Card className="border-0 shadow-xl shadow-black/5">
+        <CardHeader>
+          <CardTitle className="text-center text-destructive">Gecersiz Davet</CardTitle>
+          <CardDescription className="text-center">
+            Bu davet linki gecersiz, suresi dolmus veya zaten kullanilmis.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <Button variant="outline" onClick={() => router.push("/login")}>
+            Girise Don
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card className="border-0 shadow-xl shadow-black/5">
       <CardHeader>
         <CardTitle className="text-center">Davete Katil</CardTitle>
+        {invitedEmail && (
+          <CardDescription className="text-center flex items-center justify-center gap-1.5">
+            <Mail className="h-3.5 w-3.5" />
+            {invitedEmail}
+          </CardDescription>
+        )}
       </CardHeader>
       <form onSubmit={handleAcceptInvite}>
         <CardContent className="space-y-4">
