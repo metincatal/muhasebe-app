@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// GET: token'ı doğrula — anon client yeterli (invitations tablosu public okunabilir)
+// GET: token'ı doğrula — invitations RLS sadece org admin'e izin verdiğinden admin client kullanılıyor
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
   if (!token) {
     return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const { data: invitation, error } = await supabase
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return NextResponse.json({ error: "Sunucu yapilandirma hatasi" }, { status: 500 });
+  }
+
+  const { data: invitation, error } = await admin
     .from("invitations")
     .select("id, email, role, organization_id, expires_at, accepted_at")
     .eq("token", token)
@@ -59,9 +64,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 1. Daveti doğrula (anon client ile)
-  const supabase = await createClient();
-  const { data: invitation, error: invError } = await supabase
+  // 1. Daveti doğrula (admin client ile — RLS bypass)
+  const { data: invitation, error: invError } = await admin
     .from("invitations")
     .select("id, email, role, organization_id, expires_at, accepted_at")
     .eq("token", token)
