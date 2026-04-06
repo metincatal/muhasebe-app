@@ -78,7 +78,7 @@ export function exportToPDF(
     doc.setFontSize(8);
     doc.setTextColor(150);
     doc.text(
-      `Muhasebe Pro - ${new Date().toLocaleDateString("tr-TR")}`,
+      `Siyakat - ${new Date().toLocaleDateString("tr-TR")}`,
       14,
       doc.internal.pageSize.height - 10
     );

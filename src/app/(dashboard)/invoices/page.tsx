@@ -41,6 +41,7 @@ import {
   Download,
   Loader2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
 import { getInvoices, updateInvoiceStatus, deleteInvoice, getInvoiceWithItems } from "@/lib/actions/invoices";
@@ -79,6 +80,7 @@ const PAGE_SIZE = 50;
 
 export default function InvoicesPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -293,7 +295,10 @@ export default function InvoicesPage() {
                           <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => router.push(`/invoices/${inv.id}`)}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             Goruntule
                           </DropdownMenuItem>

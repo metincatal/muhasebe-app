@@ -168,12 +168,12 @@ export function AppSidebar() {
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 dark:from-amber-500 dark:to-amber-600 shadow-md">
                 <span className="text-sm font-bold text-white dark:text-slate-900 tracking-tight">
-                  M
+                  S
                 </span>
               </div>
               <div className="flex flex-col leading-none">
                 <span className="font-semibold text-[0.9rem] tracking-tight">
-                  Muhasebe Pro
+                  Siyakat
                 </span>
                 <span className="text-[0.7rem] text-muted-foreground mt-0.5 truncate max-w-[120px]">
                   {organization?.name || "Finans Yonetimi"}

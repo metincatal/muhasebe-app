@@ -127,6 +127,95 @@ export async function createTransaction(input: {
   return { data };
 }
 
+export async function getTransaction(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*, categories(name, color, icon)")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { data };
+}
+
+export async function updateTransaction(id: string, input: {
+  type: "income" | "expense" | "transfer";
+  amount: number;
+  currency: string;
+  description: string;
+  counterparty?: string;
+  category_id?: string;
+  date: string;
+}) {
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("transactions")
+    .select("organization_id, exchange_rate")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Islem bulunamadi" };
+
+  let exchangeRate = 1;
+  let amountInBase = input.amount;
+
+  if (input.currency !== "TRY") {
+    const { data: rateData } = await supabase
+      .from("exchange_rates")
+      .select("rate")
+      .eq("base_currency", "TRY")
+      .eq("target_currency", input.currency)
+      .order("date", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (rateData) {
+      exchangeRate = rateData.rate;
+      amountInBase = input.amount * exchangeRate;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .update({
+      type: input.type,
+      amount: input.amount,
+      currency: input.currency,
+      description: input.description,
+      counterparty: input.counterparty || null,
+      category_id: input.category_id || null,
+      date: input.date,
+      exchange_rate: exchangeRate,
+      amount_in_base: amountInBase,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("updateTransaction error:", error);
+    return { error: error.message };
+  }
+
+  await logAudit({
+    organization_id: existing.organization_id,
+    action: "update",
+    table_name: "transactions",
+    record_id: id,
+    new_data: data as Record<string, unknown>,
+  });
+
+  revalidatePath("/transactions");
+  revalidatePath("/");
+  return { data };
+}
+
 export async function deleteTransaction(id: string) {
   const supabase = await createClient();
 

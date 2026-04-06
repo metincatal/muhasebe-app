@@ -8,9 +8,9 @@ export default function AuthLayout({
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-2xl font-bold mb-4 shadow-lg shadow-blue-500/25">
-            M
+            S
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Muhasebe Pro</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Siyakat</h1>
           <p className="text-muted-foreground mt-1">Modern muhasebe yonetimi</p>
         </div>
         {children}

@@ -1,5 +1,5 @@
 -- ==========================================
--- Muhasebe Pro - Veritabani Semasi
+-- Siyakat - Veritabani Semasi
 -- ==========================================
 
 -- Organizasyonlar

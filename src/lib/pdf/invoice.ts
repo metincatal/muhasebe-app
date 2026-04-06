@@ -196,7 +196,7 @@ export function generateInvoicePdf(invoice: InvoiceData, org: OrgData | null) {
   doc.setTextColor(150);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
-  doc.text(`Muhasebe Pro — ${new Date().toLocaleDateString("tr-TR")}`, 14, footerY);
+  doc.text(`Siyakat — ${new Date().toLocaleDateString("tr-TR")}`, 14, footerY);
   doc.text("1 / 1", W - 14, footerY, { align: "right" });
 
   const fileName = `fatura-${invoice.invoice_number || invoice.id.slice(0, 8)}.pdf`;

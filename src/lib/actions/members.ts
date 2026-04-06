@@ -144,7 +144,7 @@ export async function createInvitation(orgId: string, email: string, role: strin
     const emailResult = await sendInviteEmail({
       to: email,
       inviterName: profile?.full_name || "Bir kullanici",
-      orgName: org?.name || "Muhasebe Pro",
+      orgName: org?.name || "Siyakat",
       role,
       inviteUrl,
     });

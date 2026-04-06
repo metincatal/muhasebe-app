@@ -40,6 +40,7 @@ import {
   ArrowLeftRight,
   Loader2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
 import { getTransactions, deleteTransaction } from "@/lib/actions/transactions";
@@ -60,6 +61,7 @@ const PAGE_SIZE = 50;
 
 export default function TransactionsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -254,11 +256,17 @@ export default function TransactionsPage() {
                             <MoreHorizontal className="h-4 w-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => router.push(`/transactions/${tx.id}/edit`)}
+                            >
                               <Pencil className="mr-2 h-4 w-4" />
                               Duzenle
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => router.push(`/receipts/scan?transaction_id=${tx.id}`)}
+                            >
                               <Receipt className="mr-2 h-4 w-4" />
                               Fis Ekle
                             </DropdownMenuItem>

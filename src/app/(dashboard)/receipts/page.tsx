@@ -6,6 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -13,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ScanLine,
-  Plus,
   Receipt,
   MoreHorizontal,
   Trash2,
@@ -58,6 +63,7 @@ export default function ReceiptsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
   const [receipts, setReceipts] = useState<ReceiptData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewingReceipt, setViewingReceipt] = useState<ReceiptData | null>(null);
 
   const loadReceipts = useCallback(async () => {
     if (!organization?.id) return;
@@ -82,7 +88,12 @@ export default function ReceiptsPage() {
     }
   }
 
-  const totalAmount = receipts.reduce((sum, r) => sum + Number(r.total_amount || 0), 0);
+  // Para birimine göre toplamları grupla
+  const totalsByCurrency = receipts.reduce<Record<string, number>>((acc, r) => {
+    const cur = r.currency || "TRY";
+    acc[cur] = (acc[cur] || 0) + Number(r.total_amount || 0);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -119,7 +130,17 @@ export default function ReceiptsPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Toplam Tutar</p>
-              <p className="text-lg font-bold">{formatCurrency(totalAmount)}</p>
+              {Object.entries(totalsByCurrency).length === 0 ? (
+                <p className="text-lg font-bold">{formatCurrency(0)}</p>
+              ) : (
+                <div className="space-y-0.5">
+                  {Object.entries(totalsByCurrency).map(([cur, amt]) => (
+                    <p key={cur} className="text-lg font-bold leading-tight">
+                      {formatCurrency(amt, cur)}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -172,7 +193,10 @@ export default function ReceiptsPage() {
                       <MoreHorizontal className="h-3.5 w-3.5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="cursor-pointer">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => setViewingReceipt(receipt)}
+                      >
                         <Eye className="mr-2 h-4 w-4" />
                         Goruntule
                       </DropdownMenuItem>
@@ -208,6 +232,40 @@ export default function ReceiptsPage() {
           ))}
         </div>
       )}
+      {/* Fiş görüntüleme dialog */}
+      <Dialog open={!!viewingReceipt} onOpenChange={(open) => { if (!open) setViewingReceipt(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {viewingReceipt?.vendor_name || "Fis"} — {viewingReceipt?.date
+                ? new Date(viewingReceipt.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {viewingReceipt?.image_url ? (
+            <div className="flex flex-col items-center gap-4">
+              <img
+                src={viewingReceipt.image_url}
+                alt="Fis goruntusu"
+                className="w-full max-h-[60vh] object-contain rounded-lg border"
+              />
+              <div className="w-full flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {statusLabels[viewingReceipt.status] || viewingReceipt.status}
+                </span>
+                <span className="font-semibold tabular-nums">
+                  {formatCurrency(Number(viewingReceipt.total_amount || 0), viewingReceipt.currency)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
+              <ImageIcon className="h-12 w-12" />
+              <p className="text-sm">Bu fis icin gorsel bulunamadi</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

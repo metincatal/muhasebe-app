@@ -52,7 +52,7 @@
   --color-success-foreground: var(--success-foreground);
 }
 
-/* Muhasebe Pro — Refined Slate & Warm Amber Theme */
+/* Siyakat — Refined Slate & Warm Amber Theme */
 :root {
   --background: oklch(0.98 0.002 250);
   --foreground: oklch(0.17 0.02 260);

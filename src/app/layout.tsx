@@ -17,13 +17,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Muhasebe Pro",
+  title: "Siyakat",
   description: "Modern muhasebe ve finans yonetim uygulamasi",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Muhasebe Pro",
+    title: "Siyakat",
   },
   other: {
     "mobile-web-app-capable": "yes",
