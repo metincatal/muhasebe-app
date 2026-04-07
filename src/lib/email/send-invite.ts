@@ -24,94 +24,94 @@ export async function sendInviteEmail({
     return { error: "RESEND_API_KEY yapılandırılmamış" };
   }
 
+  // Mutlak logo URL'i için site kökenini inviteUrl'den türet
+  const siteOrigin = new URL(inviteUrl).origin;
+  const logoUrl = `${siteOrigin}/icons/icon-512.png`;
+
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   const { data, error } = await resend.emails.send({
     from: "Siyakat <noreply@siyakat.app>",
     to,
-    subject: `${orgName} ekibine davet edildiniz — Siyakat`,
+    subject: `${orgName} ekibine davet edildiniz`,
     html: `
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siyakat Daveti</title>
 </head>
-<body style="margin:0;padding:0;background-color:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f0f0f;padding:48px 20px;">
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f1f5f9;padding:40px 16px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;">
 
-          <!-- Logo -->
+          <!-- Header: logo + marka adı -->
           <tr>
-            <td style="padding-bottom:32px;text-align:center;">
-              <span style="font-size:13px;font-weight:700;letter-spacing:4px;color:#6b7280;text-transform:uppercase;">SIYAKAT</span>
+            <td style="background-color:#0f172a;border-radius:16px 16px 0 0;padding:32px 40px;text-align:center;">
+              <img src="${logoUrl}" alt="Siyakat" width="64" height="64"
+                   style="display:inline-block;border-radius:14px;margin-bottom:14px;" />
+              <div style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.4px;margin:0;">Siyakat</div>
+              <div style="color:#94a3b8;font-size:13px;margin-top:4px;">Muhasebe ve Finans Yönetimi</div>
             </td>
           </tr>
 
-          <!-- Card -->
+          <!-- Kart gövdesi -->
           <tr>
-            <td style="background-color:#1a1a1a;border-radius:16px;border:1px solid #2a2a2a;overflow:hidden;">
+            <td style="background-color:#ffffff;padding:40px 40px 32px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
 
-              <!-- Top accent line -->
-              <tr>
-                <td style="height:3px;background:linear-gradient(90deg,#78716c,#d4a853,#78716c);"></td>
-              </tr>
+              <h1 style="color:#0f172a;font-size:20px;font-weight:700;margin:0 0 12px;letter-spacing:-0.3px;">
+                Ekibe Davet Edildiniz
+              </h1>
 
-              <!-- Header -->
-              <tr>
-                <td style="padding:40px 40px 32px;text-align:center;border-bottom:1px solid #2a2a2a;">
-                  <div style="display:inline-block;width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#292524,#1c1917);border:1px solid #3a3632;color:#d4a853;font-size:24px;font-weight:700;line-height:56px;text-align:center;margin-bottom:20px;">س</div>
-                  <h1 style="color:#f5f5f5;font-size:22px;margin:0 0 6px;font-weight:600;letter-spacing:-0.3px;">Ekibe Davet Edildiniz</h1>
-                  <p style="color:#6b7280;font-size:13px;margin:0;">Muhasebe yönetim platformu</p>
-                </td>
-              </tr>
+              <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px;">
+                <strong style="color:#0f172a;">${inviterName}</strong> sizi
+                <strong style="color:#0f172a;">${orgName}</strong> organizasyonuna
+                <strong style="color:#0f172a;">${roleLabel}</strong> rolüyle davet etti.
+              </p>
 
-              <!-- Body -->
-              <tr>
-                <td style="padding:36px 40px;">
-                  <p style="color:#a3a3a3;font-size:14px;line-height:1.7;margin:0 0 8px;">
-                    <span style="color:#d4a853;font-weight:600;">${inviterName}</span>, sizi
-                    <span style="color:#f5f5f5;font-weight:600;">${orgName}</span> organizasyonuna
-                    <span style="color:#f5f5f5;font-weight:500;">${roleLabel}</span> olarak davet etti.
-                  </p>
-                  <p style="color:#6b7280;font-size:14px;line-height:1.7;margin:0 0 32px;">
-                    Aşağıdaki butona tıklayarak daveti kabul edebilir ve hesabınızı oluşturabilirsiniz.
-                  </p>
+              <!-- Rol rozeti -->
+              <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:32px;">
+                <tr>
+                  <td style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;">
+                    <span style="color:#64748b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Rol</span>
+                    <span style="color:#0f172a;font-size:14px;font-weight:600;margin-left:10px;">${roleLabel}</span>
+                  </td>
+                </tr>
+              </table>
 
-                  <!-- CTA Button -->
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td align="center">
-                        <a href="${inviteUrl}" style="display:inline-block;background:linear-gradient(135deg,#d4a853,#b8893a);color:#0f0f0f;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:0.5px;">
-                          Daveti Kabul Et
-                        </a>
-                      </td>
-                    </tr>
-                  </table>
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                  <td align="center">
+                    <a href="${inviteUrl}"
+                       style="display:inline-block;background-color:#0f172a;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:15px;font-weight:600;letter-spacing:-0.1px;">
+                      Daveti Kabul Et
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
-                  <p style="color:#4b4b4b;font-size:12px;line-height:1.6;margin:28px 0 0;text-align:center;">
-                    Bu davet 7 gün içinde geçerliliğini yitirecektir.
-                  </p>
-                </td>
-              </tr>
+              <p style="color:#94a3b8;font-size:12px;line-height:1.6;margin:24px 0 0;text-align:center;">
+                Bu davet 7 gün süreyle geçerlidir.
+              </p>
 
-              <!-- Bottom accent line -->
-              <tr>
-                <td style="height:1px;background:#2a2a2a;"></td>
-              </tr>
+            </td>
+          </tr>
 
-              <!-- Footer -->
-              <tr>
-                <td style="padding:20px 40px;text-align:center;">
-                  <p style="color:#4b4b4b;font-size:11px;margin:0;letter-spacing:0.3px;">
-                    Bu e-postayı beklemiyorsanız güvenle yok sayabilirsiniz. · siyakat.app
-                  </p>
-                </td>
-              </tr>
-
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+              <p style="color:#94a3b8;font-size:12px;margin:0;">
+                Bu daveti beklemiyorsanız güvenle yok sayabilirsiniz.
+              </p>
+              <p style="color:#cbd5e1;font-size:11px;margin:6px 0 0;">
+                © ${new Date().getFullYear()} Siyakat · siyakat.app
+              </p>
             </td>
           </tr>
 
@@ -119,6 +119,7 @@ export async function sendInviteEmail({
       </td>
     </tr>
   </table>
+
 </body>
 </html>
     `.trim(),

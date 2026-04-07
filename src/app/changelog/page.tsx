@@ -14,6 +14,13 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.7",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "iyileştirme", text: "Davet e-postası Siyakat logosu ve markasıyla yeniden tasarlandı" },
+    ],
+  },
+  {
     version: "1.0.6",
     date: "7 Nisan 2026",
     changes: [
