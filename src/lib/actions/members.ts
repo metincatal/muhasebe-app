@@ -148,8 +148,7 @@ export async function createInvitation(orgId: string, email: string, role: strin
   }
 
   // Davet e-postasi gonder
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
-    (typeof window !== "undefined" ? window.location.origin : "https://muhasebe-app-sigma.vercel.app");
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://siyakat.app";
   const inviteUrl = `${baseUrl}/invite/${token}`;
 
   // Davet edenin adini al

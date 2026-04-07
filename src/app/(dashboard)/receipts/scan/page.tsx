@@ -20,6 +20,7 @@ import { useCamera, dataURLtoFile, resizeImage } from "@/hooks/use-camera";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
 import type { ReceiptOCRResult } from "@/types";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getCategories } from "@/lib/actions/categories";
 import { createReceiptWithTransaction } from "@/lib/actions/receipts";
 import {
@@ -48,6 +49,7 @@ interface Category {
 export default function ScanReceiptPage() {
   const router = useRouter();
   const { user, organization } = useAuthStore();
+  const { canWrite } = usePermissions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { videoRef, videoCallbackRef, canvasRef, isActive, isReady, error: cameraError, startCamera, stopCamera, capturePhoto } = useCamera();
 
@@ -102,6 +104,12 @@ export default function ScanReceiptPage() {
   }, []);
 
   async function processImage(file: File) {
+    if (!canWrite) {
+      toast.error("Bu islemi yapmaya yetkiniz yok", {
+        description: "Fis tarama sadece yonetici ve muhasebeciler tarafindan yapilabilir.",
+      });
+      return;
+    }
     setStep("processing");
     setIsProcessing(true);
 
