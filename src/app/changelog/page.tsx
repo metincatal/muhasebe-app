@@ -14,6 +14,13 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.8",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "yeni", text: "Lansman duyurusu e-postası şablonu ve gönderim scripti eklendi" },
+    ],
+  },
+  {
     version: "1.0.7",
     date: "7 Nisan 2026",
     changes: [
