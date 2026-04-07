@@ -14,6 +14,13 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.9",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "Davet dialogunda rol-yetki dropdown metni taşma sorunu düzeltildi" },
+    ],
+  },
+  {
     version: "1.0.8",
     date: "7 Nisan 2026",
     changes: [
