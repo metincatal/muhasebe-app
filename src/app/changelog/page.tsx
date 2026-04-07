@@ -14,6 +14,24 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.2",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "iyileştirme", text: "Sürüm yönetimi ve otomatik changelog altyapısı" },
+      { type: "düzeltme", text: "Güncelleme bildirimi eski tarayıcılarda görünmüyordu" },
+    ],
+  },
+  {
+    version: "1.0.1",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "Mobil breadcrumb'da UUID gösteriliyordu" },
+      { type: "iyileştirme", text: "Fiş detay ekranında kırık görsel yerine OCR verisi gösteriliyor" },
+      { type: "yeni", text: "Güncelleme bildirimi yeniden tasarlandı — sürüm numaraları ve değişiklikler linki eklendi" },
+      { type: "yeni", text: "Değişiklik günlüğü sayfası (/changelog)" },
+    ],
+  },
+  {
     version: "1.0.0",
     date: "7 Nisan 2026",
     label: "İlk Kararlı Sürüm",

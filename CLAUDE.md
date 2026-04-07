@@ -4,6 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
+## Sürüm Yönetimi
+
+Her commit öncesinde `package.json` içindeki `version` alanını **Semantic Versioning** kuralına göre artır:
+
+| Değişiklik türü | Artış | Örnek |
+|-----------------|-------|-------|
+| Hata düzeltmesi, küçük iyileştirme | **patch** | 1.0.1 → 1.0.2 |
+| Yeni özellik (geriye dönük uyumlu) | **minor** | 1.0.1 → 1.1.0 |
+| Kırıcı değişiklik, büyük yeniden yapılanma | **major** | 1.0.1 → 2.0.0 |
+
+Aynı commit için birden fazla değişiklik varsa en yüksek seviyeyi kullan (örn. hem yeni özellik hem bug fix → minor).
+`src/app/changelog/page.tsx` dosyasındaki `changelog` dizisine de yeni sürüm girdisini ekle.
+
 ## Commands
 
 ```bash
