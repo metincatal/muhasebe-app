@@ -471,7 +471,7 @@ export default function UsersSettingsPage() {
             <div className="space-y-2">
               <Label>Rol *</Label>
               <Select value={inviteRole} onValueChange={(v) => setInviteRole(v ?? "viewer")}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

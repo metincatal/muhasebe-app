@@ -6,15 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Sürüm Yönetimi
 
-Her commit öncesinde `package.json` içindeki `version` alanını **Semantic Versioning** kuralına göre artır:
+Sürüm artışı **sadece "push at" veya "deploy" komutunda** yapılır, her commit'te değil.
+
+Sürüm artışı için değişikliğin **3. taraf kullanıcıyı (son kullanıcıyı) etkilemesi** gerekir. Aşağıdaki değişiklikler sürüm **almaz**:
+- Sadece geliştirici araçlarına, script'lere, e-posta şablonlarına (son kullanıcıya gönderilmeyenler) dokunan değişiklikler
+- CI/CD, deployment, altyapı, ortam değişkeni değişiklikleri
+- Kod kalitesi, refactoring, yorum, dokümantasyon değişiklikleri
+
+Aşağıdaki değişiklikler sürüm **alır**:
+- Kullanıcının gördüğü UI'daki bug fix veya iyileştirmeler
+- Yeni kullanıcı özelliği veya ekran
+- Kullanıcıyı etkileyen davranış değişikliği
 
 | Değişiklik türü | Artış | Örnek |
 |-----------------|-------|-------|
-| Hata düzeltmesi, küçük iyileştirme | **patch** | 1.0.1 → 1.0.2 |
-| Yeni özellik (geriye dönük uyumlu) | **minor** | 1.0.1 → 1.1.0 |
+| UI bug fix, küçük görsel iyileştirme | **patch** | 1.0.1 → 1.0.2 |
+| Yeni kullanıcı özelliği (geriye dönük uyumlu) | **minor** | 1.0.1 → 1.1.0 |
 | Kırıcı değişiklik, büyük yeniden yapılanma | **major** | 1.0.1 → 2.0.0 |
 
-Aynı commit için birden fazla değişiklik varsa en yüksek seviyeyi kullan (örn. hem yeni özellik hem bug fix → minor).
+Push'taki birden fazla commit arasında en yüksek seviyeyi kullan.
 `src/app/changelog/page.tsx` dosyasındaki `changelog` dizisine de yeni sürüm girdisini ekle.
 
 ## Commands
