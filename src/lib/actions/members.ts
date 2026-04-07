@@ -17,13 +17,15 @@ export async function getMembers(orgId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: myMembership } = await admin
+  const { data: myMembership, error: membershipError } = await admin
     .from("organization_members")
     .select("role")
     .eq("organization_id", orgId)
     .eq("user_id", user.id)
     .eq("status", "active")
     .single();
+
+  console.log("[getMembers] orgId:", orgId, "userId:", user.id, "myMembership:", myMembership, "err:", membershipError?.message);
 
   if (!myMembership) return [];
 
@@ -33,6 +35,8 @@ export async function getMembers(orgId: string) {
     .select("id, role, created_at, user_id")
     .eq("organization_id", orgId)
     .order("created_at");
+
+  console.log("[getMembers] data count:", data?.length, "error:", error?.message);
 
   if (error) {
     console.error("getMembers error:", error);
