@@ -54,7 +54,10 @@ export function PwaRegister() {
     }
 
     if (!stored) {
-      localStorage.setItem(VERSION_KEY, JSON.stringify(latest));
+      // Eski format (düz string) — zaten farklı bir deployment var, bildirimi göster
+      setCurrentVersion("—");
+      setNewVersion(latest.version);
+      setShowUpdate(true);
       return;
     }
 
