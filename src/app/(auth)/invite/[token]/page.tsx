@@ -15,6 +15,7 @@ export default function InvitePage() {
   const token = params.token as string;
   const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,12 +30,16 @@ export default function InvitePage() {
         const data = await res.json();
         if (!res.ok || !data.email) {
           setTokenValid(false);
+          setErrorMessage(data.error || "Bilinmeyen hata");
+          console.error("Token validation failed:", res.status, data);
         } else {
           setInvitedEmail(data.email);
           setTokenValid(true);
         }
-      } catch {
+      } catch (err) {
         setTokenValid(false);
+        setErrorMessage("Sunucuya baglanilamadi");
+        console.error("Token validation error:", err);
       }
     }
     validateToken();
@@ -109,7 +114,7 @@ export default function InvitePage() {
         <CardHeader>
           <CardTitle className="text-center text-destructive">Gecersiz Davet</CardTitle>
           <CardDescription className="text-center">
-            Bu davet linki gecersiz, suresi dolmus veya zaten kullanilmis.
+            {errorMessage || "Bu davet linki gecersiz, suresi dolmus veya zaten kullanilmis."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center">

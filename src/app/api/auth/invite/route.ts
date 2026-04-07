@@ -11,8 +11,9 @@ export async function GET(request: NextRequest) {
   let admin: ReturnType<typeof createAdminClient>;
   try {
     admin = createAdminClient();
-  } catch {
-    return NextResponse.json({ error: "Sunucu yapilandirma hatasi" }, { status: 500 });
+  } catch (err) {
+    console.error("Admin client olusturulamadi (GET):", err);
+    return NextResponse.json({ error: "Sunucu yapilandirma hatasi. Yoneticiyle iletisime gecin." }, { status: 500 });
   }
 
   const { data: invitation, error } = await admin
@@ -22,7 +23,19 @@ export async function GET(request: NextRequest) {
     .single();
 
   if (error || !invitation) {
-    return NextResponse.json({ error: "Gecersiz davet" }, { status: 404 });
+    console.error("Invitation query failed:", {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+      tokenPrefix: token?.substring(0, 8),
+    });
+    // PGRST116 = "JSON object requested, single row not found" — token bulunamadı
+    const isNotFound = error?.code === "PGRST116";
+    return NextResponse.json(
+      { error: isNotFound ? "Gecersiz davet tokeni" : `Sunucu hatasi: ${error?.message || "Bilinmeyen"}` },
+      { status: isNotFound ? 404 : 500 }
+    );
   }
   if (invitation.accepted_at) {
     return NextResponse.json({ error: "Bu davet zaten kullanilmis" }, { status: 400 });

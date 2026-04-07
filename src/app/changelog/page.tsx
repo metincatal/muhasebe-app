@@ -14,6 +14,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.4",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "Davet sayfasında sunucu hatası yerine gerçek hata mesajı gösterilmesi sağlandı" },
+      { type: "iyileştirme", text: "Davet API endpoint'ine detaylı hata loglama eklendi" },
+    ],
+  },
+  {
     version: "1.0.3",
     date: "7 Nisan 2026",
     changes: [
