@@ -41,36 +41,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        // Organizasyon uyeligi
-        const { data: membership } = await supabase
+        // Organizasyon uyeligi — join yerine ayrı sorgu (join + RLS edge case'lerinden kaçınmak için)
+        const { data: memberships } = await supabase
           .from("organization_members")
-          .select("organization_id, role, organizations(*)")
+          .select("organization_id, role")
           .eq("user_id", user.id)
           .eq("status", "active")
-          .single();
+          .order("accepted_at", { ascending: false })
+          .limit(1);
+
+        const membership = memberships?.[0] ?? null;
 
         if (membership) {
-          const org = (
-            Array.isArray(membership.organizations)
-              ? membership.organizations[0]
-              : membership.organizations
-          ) as { id: string; name: string; type: string; default_currency: string };
-          setOrganization({
-            id: org.id,
-            name: org.name,
-            type: org.type as "individual" | "corporate",
-            defaultCurrency: org.default_currency,
-          });
           setRole(membership.role as "admin" | "accountant" | "viewer");
 
-          // Varsayilan kategorileri kontrol et, yoksa olustur
-          const { count } = await supabase
-            .from("categories")
-            .select("*", { count: "exact", head: true })
-            .eq("organization_id", org.id);
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("id, name, type, default_currency")
+            .eq("id", membership.organization_id)
+            .single();
 
-          if (count === 0) {
-            await seedDefaultCategories(org.id);
+          if (org) {
+            setOrganization({
+              id: org.id,
+              name: org.name,
+              type: org.type as "individual" | "corporate",
+              defaultCurrency: org.default_currency,
+            });
+
+            // Varsayilan kategorileri kontrol et, yoksa olustur
+            const { count } = await supabase
+              .from("categories")
+              .select("*", { count: "exact", head: true })
+              .eq("organization_id", org.id);
+
+            if (count === 0) {
+              await seedDefaultCategories(org.id);
+            }
           }
         }
       } catch (err) {
