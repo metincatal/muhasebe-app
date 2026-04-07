@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export interface BudgetWithActual {
   category_id: string;
@@ -93,7 +95,10 @@ export async function upsertBudget(input: {
   year: number;
   month: number;
   amount: number;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -123,8 +128,19 @@ export async function upsertBudget(input: {
   return { data };
 }
 
-export async function deleteBudget(id: string) {
+export async function deleteBudget(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("budgets")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Butce bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("budgets")

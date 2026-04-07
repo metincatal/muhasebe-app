@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { invoiceSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/actions/audit-log";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 const PAGE_SIZE = 50;
 
@@ -87,13 +89,16 @@ export async function createInvoice(input: {
     total: number;
   }[];
   created_by: string;
-}) {
+}): Promise<ActionReturn> {
   // Validate input
   const parsed = invoiceSchema.safeParse(input);
   if (!parsed.success) {
     const firstError = parsed.error.issues[0];
     return { error: firstError.message };
   }
+
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
 
   const supabase = await createClient();
 
@@ -174,7 +179,7 @@ export async function createInvoice(input: {
   return { data: invoice };
 }
 
-export async function updateInvoiceStatus(id: string, status: string) {
+export async function updateInvoiceStatus(id: string, status: string): Promise<ActionReturn> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -182,6 +187,11 @@ export async function updateInvoiceStatus(id: string, status: string) {
     .select("organization_id, status")
     .eq("id", id)
     .single();
+
+  if (!existing) return { error: "Fatura bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("invoices")
@@ -192,22 +202,20 @@ export async function updateInvoiceStatus(id: string, status: string) {
     return { error: error.message };
   }
 
-  if (existing) {
-    await logAudit({
-      organization_id: existing.organization_id,
-      action: "update",
-      table_name: "invoices",
-      record_id: id,
-      old_data: { status: existing.status },
-      new_data: { status },
-    });
-  }
+  await logAudit({
+    organization_id: existing.organization_id,
+    action: "update",
+    table_name: "invoices",
+    record_id: id,
+    old_data: { status: existing.status },
+    new_data: { status },
+  });
 
   revalidatePath("/invoices");
   return { success: true };
 }
 
-export async function deleteInvoice(id: string) {
+export async function deleteInvoice(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -215,6 +223,11 @@ export async function deleteInvoice(id: string) {
     .select("organization_id, invoice_number, counterparty_name, total")
     .eq("id", id)
     .single();
+
+  if (!existing) return { error: "Fatura bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("invoices")
@@ -225,15 +238,13 @@ export async function deleteInvoice(id: string) {
     return { error: error.message };
   }
 
-  if (existing) {
-    await logAudit({
-      organization_id: existing.organization_id,
-      action: "delete",
-      table_name: "invoices",
-      record_id: id,
-      old_data: existing as Record<string, unknown>,
-    });
-  }
+  await logAudit({
+    organization_id: existing.organization_id,
+    action: "delete",
+    table_name: "invoices",
+    record_id: id,
+    old_data: existing as Record<string, unknown>,
+  });
 
   revalidatePath("/invoices");
   revalidatePath("/");

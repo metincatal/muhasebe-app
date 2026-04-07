@@ -14,6 +14,16 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.1.0",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "yeni", text: "Rol tabanlı yetkilendirme: İzleyici (viewer) artık veri oluşturamaz, düzenleyemez veya silemez" },
+      { type: "yeni", text: "Veritabanı düzeyinde RLS politikaları güncellendi — tüm 13 tabloda rol ayrımı uygulandı" },
+      { type: "yeni", text: "Sunucu action'larına rol kontrolü eklendi — yetkisiz istekler engellenir" },
+      { type: "yeni", text: "Admin dışındaki üyeler artık üye yönetimi ve API anahtarı işlemleri yapamaz" },
+    ],
+  },
+  {
     version: "1.0.9",
     date: "7 Nisan 2026",
     changes: [

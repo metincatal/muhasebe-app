@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getRecurringTransactions(orgId: string) {
   const supabase = await createClient();
@@ -32,7 +34,10 @@ export async function createRecurringTransaction(input: {
   start_date: string;
   end_date?: string;
   created_by: string;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];
   const endDate = input.end_date || null;
@@ -67,8 +72,19 @@ export async function createRecurringTransaction(input: {
   return { data };
 }
 
-export async function toggleRecurringTransaction(id: string, isActive: boolean) {
+export async function toggleRecurringTransaction(id: string, isActive: boolean): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("recurring_transactions")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Tekrarlayan islem bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("recurring_transactions")
@@ -83,8 +99,19 @@ export async function toggleRecurringTransaction(id: string, isActive: boolean) 
   return { success: true };
 }
 
-export async function deleteRecurringTransaction(id: string) {
+export async function deleteRecurringTransaction(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("recurring_transactions")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Tekrarlayan islem bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("recurring_transactions")

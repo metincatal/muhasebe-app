@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getAccounts(orgId: string) {
   const supabase = await createClient();
@@ -28,7 +30,10 @@ export async function createAccount(input: {
   parent_id?: string;
   currency?: string;
   description?: string;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -59,8 +64,19 @@ export async function createAccount(input: {
 export async function updateAccount(
   id: string,
   input: { name?: string; is_active?: boolean; description?: string }
-) {
+): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("accounts")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Hesap bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("accounts")
@@ -75,18 +91,23 @@ export async function updateAccount(
   return { success: true };
 }
 
-export async function deleteAccount(id: string) {
+export async function deleteAccount(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
 
   const { data: account } = await supabase
     .from("accounts")
-    .select("is_system")
+    .select("organization_id, is_system")
     .eq("id", id)
     .single();
 
   if (account?.is_system) {
     return { error: "Sistem hesaplari silinemez" };
   }
+
+  if (!account) return { error: "Hesap bulunamadi" };
+
+  const accessError = await requireWriteAccess(account.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("accounts")

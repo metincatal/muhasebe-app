@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createHash, randomBytes } from "crypto";
+import { requireAdminAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 function hashKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
@@ -13,7 +15,10 @@ export async function generateApiKey(input: {
   permissions: string[];
   created_by: string;
   expires_at?: string;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireAdminAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   const rawKey = "mpro_" + randomBytes(32).toString("hex");
@@ -58,8 +63,19 @@ export async function getApiKeys(orgId: string) {
   return data;
 }
 
-export async function revokeApiKey(id: string) {
+export async function revokeApiKey(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("api_keys")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "API anahtari bulunamadi" };
+
+  const accessError = await requireAdminAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("api_keys")
@@ -73,8 +89,19 @@ export async function revokeApiKey(id: string) {
   return { success: true };
 }
 
-export async function deleteApiKey(id: string) {
+export async function deleteApiKey(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("api_keys")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "API anahtari bulunamadi" };
+
+  const accessError = await requireAdminAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("api_keys")
@@ -110,7 +137,10 @@ export async function createWebhook(input: {
   url: string;
   events: string[];
   created_by: string;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireAdminAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   const secret = "whsec_" + randomBytes(24).toString("hex");
@@ -135,8 +165,19 @@ export async function createWebhook(input: {
   return { data };
 }
 
-export async function deleteWebhook(id: string) {
+export async function deleteWebhook(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("webhooks")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Webhook bulunamadi" };
+
+  const accessError = await requireAdminAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("webhooks")
@@ -150,8 +191,19 @@ export async function deleteWebhook(id: string) {
   return { success: true };
 }
 
-export async function toggleWebhook(id: string, isActive: boolean) {
+export async function toggleWebhook(id: string, isActive: boolean): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("webhooks")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Webhook bulunamadi" };
+
+  const accessError = await requireAdminAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("webhooks")

@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sendInviteEmail } from "@/lib/email/send-invite";
+import { requireAdminAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getMembers(orgId: string) {
   const supabase = await createClient();
@@ -56,8 +58,19 @@ export async function getMemberEmails(userIds: string[]) {
   return emailMap;
 }
 
-export async function updateMemberRole(memberId: string, role: string) {
+export async function updateMemberRole(memberId: string, role: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: member } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("id", memberId)
+    .single();
+
+  if (!member) return { error: "Uye bulunamadi" };
+
+  const accessError = await requireAdminAccess(member.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("organization_members")
@@ -72,8 +85,19 @@ export async function updateMemberRole(memberId: string, role: string) {
   return { success: true };
 }
 
-export async function removeMember(memberId: string) {
+export async function removeMember(memberId: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: member } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("id", memberId)
+    .single();
+
+  if (!member) return { error: "Uye bulunamadi" };
+
+  const accessError = await requireAdminAccess(member.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("organization_members")
@@ -88,7 +112,10 @@ export async function removeMember(memberId: string) {
   return { success: true };
 }
 
-export async function createInvitation(orgId: string, email: string, role: string) {
+export async function createInvitation(orgId: string, email: string, role: string): Promise<ActionReturn> {
+  const accessError = await requireAdminAccess(orgId);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   // Mevcut kullaniciyi al
@@ -177,8 +204,19 @@ export async function getInvitations(orgId: string) {
   return data;
 }
 
-export async function deleteInvitation(id: string) {
+export async function deleteInvitation(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: invitation } = await supabase
+    .from("invitations")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!invitation) return { error: "Davet bulunamadi" };
+
+  const accessError = await requireAdminAccess(invitation.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("invitations")

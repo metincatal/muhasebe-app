@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getCategories(orgId: string, type?: "income" | "expense") {
   const supabase = await createClient();
@@ -32,7 +34,10 @@ export async function createCategory(input: {
   type: "income" | "expense";
   color?: string;
   icon?: string;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -60,8 +65,19 @@ export async function createCategory(input: {
 export async function updateCategory(
   id: string,
   input: { name?: string; color?: string; icon?: string }
-) {
+): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("categories")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Kategori bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("categories")
@@ -77,19 +93,23 @@ export async function updateCategory(
   return { success: true };
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
 
-  // Sistem kategorileri silinemez
   const { data: cat } = await supabase
     .from("categories")
-    .select("is_system")
+    .select("organization_id, is_system")
     .eq("id", id)
     .single();
 
   if (cat?.is_system) {
     return { error: "Sistem kategorileri silinemez" };
   }
+
+  if (!cat) return { error: "Kategori bulunamadi" };
+
+  const accessError = await requireWriteAccess(cat.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("categories")

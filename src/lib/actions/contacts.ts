@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getContacts(orgId: string, filters?: {
   type?: string;
@@ -45,7 +47,10 @@ export async function createContact(input: {
   phone?: string;
   address?: string;
   notes?: string;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -85,8 +90,19 @@ export async function updateContact(
     address?: string;
     notes?: string;
   }
-) {
+): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("contacts")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Kisi bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("contacts")
@@ -223,8 +239,19 @@ export async function getContactStatement(orgId: string, contactId: string) {
   };
 }
 
-export async function deleteContact(id: string) {
+export async function deleteContact(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("contacts")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Kisi bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("contacts")

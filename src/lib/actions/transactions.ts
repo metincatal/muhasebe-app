@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { transactionSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/actions/audit-log";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 const PAGE_SIZE = 50;
 
@@ -58,13 +60,16 @@ export async function createTransaction(input: {
   date: string;
   tags?: string[];
   created_by: string;
-}) {
+}): Promise<ActionReturn> {
   // Validate input
   const parsed = transactionSchema.safeParse(input);
   if (!parsed.success) {
     const firstError = parsed.error.issues[0];
     return { error: firstError.message };
   }
+
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
 
   const supabase = await createClient();
 
@@ -151,7 +156,7 @@ export async function updateTransaction(id: string, input: {
   counterparty?: string;
   category_id?: string;
   date: string;
-}) {
+}): Promise<ActionReturn> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -161,6 +166,9 @@ export async function updateTransaction(id: string, input: {
     .single();
 
   if (!existing) return { error: "Islem bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   let exchangeRate = 1;
   let amountInBase = input.amount;
@@ -216,7 +224,7 @@ export async function updateTransaction(id: string, input: {
   return { data };
 }
 
-export async function deleteTransaction(id: string) {
+export async function deleteTransaction(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -224,6 +232,11 @@ export async function deleteTransaction(id: string) {
     .select("*")
     .eq("id", id)
     .single();
+
+  if (!existing) return { error: "Islem bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("transactions")
@@ -235,15 +248,13 @@ export async function deleteTransaction(id: string) {
     return { error: error.message };
   }
 
-  if (existing) {
-    await logAudit({
-      organization_id: existing.organization_id,
-      action: "delete",
-      table_name: "transactions",
-      record_id: id,
-      old_data: existing as Record<string, unknown>,
-    });
-  }
+  await logAudit({
+    organization_id: existing.organization_id,
+    action: "delete",
+    table_name: "transactions",
+    record_id: id,
+    old_data: existing as Record<string, unknown>,
+  });
 
   revalidatePath("/transactions");
   revalidatePath("/");

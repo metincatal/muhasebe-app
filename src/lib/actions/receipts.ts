@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getReceipts(orgId: string) {
   const supabase = await createClient();
@@ -32,7 +34,10 @@ export async function createReceiptWithTransaction(input: {
   ocr_parsed_data?: Record<string, unknown>;
   image_url?: string;
   created_by: string;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   // Doviz kuru hesapla
@@ -113,15 +118,20 @@ export async function createReceiptWithTransaction(input: {
   return { data: receipt };
 }
 
-export async function deleteReceipt(id: string) {
+export async function deleteReceipt(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
 
   // Fis kaydini ve bagli islemi sil
   const { data: receipt } = await supabase
     .from("receipts")
-    .select("transaction_id")
+    .select("organization_id, transaction_id")
     .eq("id", id)
     .single();
+
+  if (!receipt) return { error: "Fis bulunamadi" };
+
+  const accessError = await requireWriteAccess(receipt.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("receipts")

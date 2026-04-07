@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireWriteAccess } from "@/lib/auth/role-check";
+import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getBankAccounts(orgId: string) {
   const supabase = await createClient();
@@ -27,7 +29,10 @@ export async function createBankAccount(input: {
   iban?: string;
   currency?: string;
   balance?: number;
-}) {
+}): Promise<ActionReturn> {
+  const accessError = await requireWriteAccess(input.organization_id);
+  if (accessError) return accessError;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -56,8 +61,19 @@ export async function createBankAccount(input: {
 export async function updateBankAccount(
   id: string,
   input: { bank_name?: string; account_name?: string; iban?: string; balance?: number; is_active?: boolean }
-) {
+): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("bank_accounts")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Banka hesabi bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("bank_accounts")
@@ -72,8 +88,19 @@ export async function updateBankAccount(
   return { success: true };
 }
 
-export async function deleteBankAccount(id: string) {
+export async function deleteBankAccount(id: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("bank_accounts")
+    .select("organization_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Banka hesabi bulunamadi" };
+
+  const accessError = await requireWriteAccess(existing.organization_id);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("bank_accounts")
@@ -91,8 +118,19 @@ export async function deleteBankAccount(id: string) {
 export async function importBankTransactions(
   bankAccountId: string,
   rows: { date: string; description: string; amount: number; type: "credit" | "debit" }[]
-) {
+): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: bankAccount } = await supabase
+    .from("bank_accounts")
+    .select("organization_id")
+    .eq("id", bankAccountId)
+    .single();
+
+  if (!bankAccount) return { error: "Banka hesabi bulunamadi" };
+
+  const accessError = await requireWriteAccess(bankAccount.organization_id);
+  if (accessError) return accessError;
 
   const inserts = rows.map((row) => ({
     bank_account_id: bankAccountId,
@@ -166,8 +204,23 @@ export async function findMatchingTransactions(
   return data;
 }
 
-export async function confirmBankMatch(bankTransactionId: string, transactionId: string) {
+export async function confirmBankMatch(bankTransactionId: string, transactionId: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: bankTx } = await supabase
+    .from("bank_transactions")
+    .select("bank_account_id, bank_accounts(organization_id)")
+    .eq("id", bankTransactionId)
+    .single();
+
+  if (!bankTx) return { error: "Banka islemi bulunamadi" };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orgId = (bankTx.bank_accounts as any)?.organization_id as string | undefined;
+  if (!orgId) return { error: "Organizasyon bulunamadi" };
+
+  const accessError = await requireWriteAccess(orgId);
+  if (accessError) return accessError;
 
   const { error: btErr } = await supabase
     .from("bank_transactions")
@@ -187,8 +240,23 @@ export async function confirmBankMatch(bankTransactionId: string, transactionId:
   return { success: true };
 }
 
-export async function dismissBankTransaction(bankTransactionId: string) {
+export async function dismissBankTransaction(bankTransactionId: string): Promise<ActionReturn> {
   const supabase = await createClient();
+
+  const { data: bankTx } = await supabase
+    .from("bank_transactions")
+    .select("bank_account_id, bank_accounts(organization_id)")
+    .eq("id", bankTransactionId)
+    .single();
+
+  if (!bankTx) return { error: "Banka islemi bulunamadi" };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orgId = (bankTx.bank_accounts as any)?.organization_id as string | undefined;
+  if (!orgId) return { error: "Organizasyon bulunamadi" };
+
+  const accessError = await requireWriteAccess(orgId);
+  if (accessError) return accessError;
 
   const { error } = await supabase
     .from("bank_transactions")
