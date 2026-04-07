@@ -14,6 +14,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.3",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "iyileştirme", text: "Sidebar ve giriş ekranındaki 'S' harfi Siyakat amblemiyle değiştirildi" },
+      { type: "iyileştirme", text: "Favicon ve apple-touch-icon Siyakat logosuna güncellendi" },
+    ],
+  },
+  {
     version: "1.0.2",
     date: "7 Nisan 2026",
     changes: [

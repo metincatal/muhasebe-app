@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -166,10 +167,8 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 dark:from-amber-500 dark:to-amber-600 shadow-md">
-                <span className="text-sm font-bold text-white dark:text-slate-900 tracking-tight">
-                  S
-                </span>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-md">
+                <Image src="/logo.png" alt="Siyakat" width={36} height={36} className="object-contain" />
               </div>
               <div className="flex flex-col leading-none">
                 <span className="font-semibold text-[0.9rem] tracking-tight">
