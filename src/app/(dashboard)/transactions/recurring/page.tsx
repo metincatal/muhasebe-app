@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   getRecurringTransactions,
   createRecurringTransaction,
@@ -97,6 +98,7 @@ const frequencyColors: Record<string, string> = {
 
 export default function RecurringPage() {
   const { organization, user, isLoading: authLoading } = useAuthStore();
+  const { canWrite } = usePermissions();
   const [items, setItems] = useState<RecurringTransaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -235,20 +237,22 @@ export default function RecurringPage() {
             Periyodik gelir ve giderlerinizi otomatik olarak kaydedin
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleProcess} disabled={processing}>
-            {processing ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <CalendarClock className="h-4 w-4 mr-2" />
-            )}
-            Simdi Islet
-          </Button>
-          <Button onClick={() => setShowDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Yeni Ekle
-          </Button>
-        </div>
+        {canWrite && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleProcess} disabled={processing}>
+              {processing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <CalendarClock className="h-4 w-4 mr-2" />
+              )}
+              Simdi Islet
+            </Button>
+            <Button onClick={() => setShowDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Yeni Ekle
+            </Button>
+          </div>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -261,10 +265,12 @@ export default function RecurringPage() {
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
               Kira, maas, abonelik gibi duzeni islemlerinizi buraya ekleyin.
             </p>
-            <Button className="mt-4" onClick={() => setShowDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ilk islemi ekle
-            </Button>
+            {canWrite && (
+              <Button className="mt-4" onClick={() => setShowDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ilk islemi ekle
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -293,7 +299,8 @@ export default function RecurringPage() {
                     <TableCell>
                       <Switch
                         checked={item.is_active}
-                        onCheckedChange={() => handleToggle(item.id, item.is_active)}
+                        onCheckedChange={() => canWrite && handleToggle(item.id, item.is_active)}
+                        disabled={!canWrite}
                       />
                     </TableCell>
                     <TableCell>
@@ -331,22 +338,24 @@ export default function RecurringPage() {
                     <TableCell className="text-sm tabular-nums text-muted-foreground">
                       {item.is_active ? item.next_run_date : "—"}
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Sil
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {canWrite && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Sil
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

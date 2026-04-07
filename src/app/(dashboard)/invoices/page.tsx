@@ -44,6 +44,7 @@ import {
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getInvoices, updateInvoiceStatus, deleteInvoice, getInvoiceWithItems } from "@/lib/actions/invoices";
 import { generateInvoicePdf } from "@/lib/pdf/invoice";
 import { toast } from "sonner";
@@ -81,6 +82,7 @@ const PAGE_SIZE = 50;
 export default function InvoicesPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
+  const { canWrite } = usePermissions();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -164,10 +166,12 @@ export default function InvoicesPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Faturalar</h1>
           <p className="text-sm text-muted-foreground mt-1">Satis ve alis faturalarinizi yonetin</p>
         </div>
-        <Button size="sm" render={<Link href="/invoices/new" />}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          Yeni Fatura
-        </Button>
+        {canWrite && (
+          <Button size="sm" render={<Link href="/invoices/new" />}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Yeni Fatura
+          </Button>
+        )}
       </div>
 
       {/* Summary */}
@@ -309,7 +313,7 @@ export default function InvoicesPage() {
                             <Download className="mr-2 h-4 w-4" />
                             PDF Indir
                           </DropdownMenuItem>
-                          {inv.status === "draft" && (
+                          {canWrite && inv.status === "draft" && (
                             <DropdownMenuItem
                               className="cursor-pointer"
                               onClick={() => handleStatusChange(inv.id, "sent")}
@@ -318,7 +322,7 @@ export default function InvoicesPage() {
                               Gonder
                             </DropdownMenuItem>
                           )}
-                          {(inv.status === "sent" || inv.status === "overdue") && (
+                          {canWrite && (inv.status === "sent" || inv.status === "overdue") && (
                             <DropdownMenuItem
                               className="cursor-pointer"
                               onClick={() => handleStatusChange(inv.id, "paid")}
@@ -327,15 +331,17 @@ export default function InvoicesPage() {
                               Odendi Isaretle
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            className="cursor-pointer"
-                            onClick={() => handleDelete(inv.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Sil
-                          </DropdownMenuItem>
+                          {canWrite && <DropdownMenuSeparator />}
+                          {canWrite && (
+                            <DropdownMenuItem
+                              variant="destructive"
+                              className="cursor-pointer"
+                              onClick={() => handleDelete(inv.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Sil
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

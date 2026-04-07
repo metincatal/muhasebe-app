@@ -43,6 +43,7 @@ import {
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getTransactions, deleteTransaction } from "@/lib/actions/transactions";
 import { toast } from "sonner";
 
@@ -62,6 +63,7 @@ const PAGE_SIZE = 50;
 export default function TransactionsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
+  const { canWrite } = usePermissions();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -127,10 +129,12 @@ export default function TransactionsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Islemler</h1>
           <p className="text-sm text-muted-foreground mt-1">Gelir, gider ve transfer islemlerinizi yonetin</p>
         </div>
-        <Button size="sm" render={<Link href="/transactions/new" />}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          Yeni Islem
-        </Button>
+        {canWrite && (
+          <Button size="sm" render={<Link href="/transactions/new" />}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Yeni Islem
+          </Button>
+        )}
       </div>
 
       {/* Summary */}
@@ -250,37 +254,39 @@ export default function TransactionsPage() {
                           {formatCurrency(Number(tx.amount), tx.currency)}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="cursor-pointer"
-                              onClick={() => router.push(`/transactions/${tx.id}/edit`)}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Duzenle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="cursor-pointer"
-                              onClick={() => router.push(`/receipts/scan?transaction_id=${tx.id}`)}
-                            >
-                              <Receipt className="mr-2 h-4 w-4" />
-                              Fis Ekle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              className="cursor-pointer"
-                              onClick={() => handleDelete(tx.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Sil
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {canWrite && (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => router.push(`/transactions/${tx.id}/edit`)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Duzenle
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => router.push(`/receipts/scan?transaction_id=${tx.id}`)}
+                              >
+                                <Receipt className="mr-2 h-4 w-4" />
+                                Fis Ekle
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                className="cursor-pointer"
+                                onClick={() => handleDelete(tx.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Sil
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}

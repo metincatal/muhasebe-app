@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { createInvoice } from "@/lib/actions/invoices";
 import {
   ArrowLeft,
@@ -68,8 +69,15 @@ function calculateItem(item: InvoiceItem): InvoiceItem {
 
 export default function NewInvoicePage() {
   const router = useRouter();
-  const { user, organization } = useAuthStore();
+  const { user, organization, isLoading: authLoading } = useAuthStore();
+  const { isViewer } = usePermissions();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && isViewer) {
+      router.push("/invoices");
+    }
+  }, [authLoading, isViewer, router]);
   const [invoiceType, setInvoiceType] = useState<"sales" | "purchase">("sales");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);

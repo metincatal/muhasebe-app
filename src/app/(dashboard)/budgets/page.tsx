@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   getBudgetsWithActuals,
   upsertBudget,
@@ -65,6 +66,7 @@ interface EditState {
 
 export default function BudgetsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const { canWrite } = usePermissions();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -284,7 +286,7 @@ export default function BudgetsPage() {
                         {item.category_name}
                       </span>
                       {/* Bütçe edit alanı */}
-                      {isEditing ? (
+                      {canWrite && isEditing ? (
                         <div className="flex items-center gap-1 shrink-0">
                           <Input
                             ref={inputRef}
@@ -328,7 +330,7 @@ export default function BudgetsPage() {
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                      ) : (
+                      ) : canWrite ? (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -342,6 +344,10 @@ export default function BudgetsPage() {
                           </span>
                           <Pencil className="ml-1 h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
                         </Button>
+                      ) : (
+                        <span className="text-xs shrink-0 text-muted-foreground">
+                          {item.budget_amount > 0 ? formatCurrency(item.budget_amount) : "—"}
+                        </span>
                       )}
                     </div>
 

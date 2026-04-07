@@ -52,6 +52,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getContacts, createContact, deleteContact } from "@/lib/actions/contacts";
 import { toast } from "sonner";
 
@@ -81,6 +82,7 @@ const typeColors: Record<string, string> = {
 
 export default function ContactsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const { canWrite } = usePermissions();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -179,10 +181,12 @@ export default function ContactsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Rehber</h1>
           <p className="text-sm text-muted-foreground mt-1">Musteri ve tedarikci rehberi</p>
         </div>
-        <Button size="sm" onClick={() => setShowDialog(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          Yeni Kisi
-        </Button>
+        {canWrite && (
+          <Button size="sm" onClick={() => setShowDialog(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Yeni Kisi
+          </Button>
+        )}
       </div>
 
       {/* Summary */}
@@ -301,27 +305,29 @@ export default function ContactsPage() {
                         {!contact.phone && !contact.email && "-"}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100 transition-opacity" />}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="cursor-pointer">
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Duzenle
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            className="cursor-pointer"
-                            onClick={() => handleDelete(contact.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Sil
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {canWrite && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100 transition-opacity" />}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="cursor-pointer">
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Duzenle
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              className="cursor-pointer"
+                              onClick={() => handleDelete(contact.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Sil
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {contacts.length === 0 && (

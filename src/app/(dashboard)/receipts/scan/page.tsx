@@ -48,8 +48,14 @@ interface Category {
 
 export default function ScanReceiptPage() {
   const router = useRouter();
-  const { user, organization } = useAuthStore();
-  const { canWrite } = usePermissions();
+  const { user, organization, isLoading: authLoading } = useAuthStore();
+  const { canWrite, isViewer } = usePermissions();
+
+  useEffect(() => {
+    if (!authLoading && isViewer) {
+      router.push("/receipts");
+    }
+  }, [authLoading, isViewer, router]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { videoRef, videoCallbackRef, canvasRef, isActive, isReady, error: cameraError, startCamera, stopCamera, capturePhoto } = useCamera();
 

@@ -14,6 +14,16 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.2.0",
+    date: "8 Nisan 2026",
+    changes: [
+      { type: "yeni", text: "İzleyici (viewer) rolü için UI kısıtlamaları: Yeni/Düzenle/Sil butonları görünmez" },
+      { type: "yeni", text: "Viewer kullanıcılar /new ve /edit rotalarına doğrudan giremez, liste sayfasına yönlendirilir" },
+      { type: "yeni", text: "Bütçe planlama sayfasında viewer için inline düzenleme devre dışı" },
+      { type: "yeni", text: "Tekrarlayan işlemlerde aktif/pasif toggle viewer için devre dışı" },
+    ],
+  },
+  {
     version: "1.1.2",
     date: "8 Nisan 2026",
     changes: [

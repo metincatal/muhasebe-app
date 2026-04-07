@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getReceipts, deleteReceipt } from "@/lib/actions/receipts";
 import { toast } from "sonner";
 
@@ -61,6 +62,7 @@ const statusColors: Record<string, string> = {
 
 export default function ReceiptsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const { canWrite } = usePermissions();
   const [receipts, setReceipts] = useState<ReceiptData[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingReceipt, setViewingReceipt] = useState<ReceiptData | null>(null);
@@ -104,10 +106,12 @@ export default function ReceiptsPage() {
             Fis galerisi ve OCR taranan belgeler
           </p>
         </div>
-        <Button size="sm" render={<Link href="/receipts/scan" />}>
-          <ScanLine className="mr-1.5 h-4 w-4" />
-          Fis Tara
-        </Button>
+        {canWrite && (
+          <Button size="sm" render={<Link href="/receipts/scan" />}>
+            <ScanLine className="mr-1.5 h-4 w-4" />
+            Fis Tara
+          </Button>
+        )}
       </div>
 
       {/* Summary */}
@@ -161,10 +165,12 @@ export default function ReceiptsPage() {
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
               Fisinizi fotograflayarak veya yukleyerek otomatik okutabilirsiniz.
             </p>
-            <Button className="mt-4" render={<Link href="/receipts/scan" />}>
-              <ScanLine className="mr-1.5 h-4 w-4" />
-              Ilk Fisinizi Tarayin
-            </Button>
+            {canWrite && (
+              <Button className="mt-4" render={<Link href="/receipts/scan" />}>
+                <ScanLine className="mr-1.5 h-4 w-4" />
+                Ilk Fisinizi Tarayin
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -200,14 +206,16 @@ export default function ReceiptsPage() {
                         <Eye className="mr-2 h-4 w-4" />
                         Goruntule
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        className="cursor-pointer"
-                        onClick={() => handleDelete(receipt.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Sil
-                      </DropdownMenuItem>
+                      {canWrite && (
+                        <DropdownMenuItem
+                          variant="destructive"
+                          className="cursor-pointer"
+                          onClick={() => handleDelete(receipt.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Sil
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

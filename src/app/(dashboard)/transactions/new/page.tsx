@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getCategories } from "@/lib/actions/categories";
 import { createTransaction } from "@/lib/actions/transactions";
 import { transactionSchema } from "@/lib/validations";
@@ -49,8 +50,15 @@ interface Category {
 
 export default function NewTransactionPage() {
   const router = useRouter();
-  const { user, organization } = useAuthStore();
+  const { user, organization, isLoading: authLoading } = useAuthStore();
+  const { isViewer } = usePermissions();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && isViewer) {
+      router.push("/transactions");
+    }
+  }, [authLoading, isViewer, router]);
   const [type, setType] = useState<"income" | "expense" | "transfer">("expense");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("TRY");

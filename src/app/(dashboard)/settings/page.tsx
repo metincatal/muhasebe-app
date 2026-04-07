@@ -37,6 +37,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { createClient } from "@/lib/supabase/client";
 import { getCategories, createCategory, deleteCategory } from "@/lib/actions/categories";
 import { toast } from "sonner";
@@ -52,6 +53,7 @@ interface Category {
 
 export default function SettingsPage() {
   const { user, organization, role } = useAuthStore();
+  const { canWrite } = usePermissions();
   const supabase = createClient();
 
   // Org form
@@ -235,16 +237,18 @@ export default function SettingsPage() {
               onChange={(e) => setOrgAddress(e.target.value)}
             />
           </div>
-          <div className="flex justify-end">
-            <Button onClick={handleSaveOrg} disabled={savingOrg || !orgName}>
-              {savingOrg ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-1.5 h-4 w-4" />
-              )}
-              Kaydet
-            </Button>
-          </div>
+          {canWrite && (
+            <div className="flex justify-end">
+              <Button onClick={handleSaveOrg} disabled={savingOrg || !orgName}>
+                {savingOrg ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-1.5 h-4 w-4" />
+                )}
+                Kaydet
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -281,10 +285,12 @@ export default function SettingsPage() {
               <Tag className="h-4 w-4" />
               Kategoriler
             </CardTitle>
-            <Button size="sm" variant="outline" onClick={() => setShowCatDialog(true)}>
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Yeni
-            </Button>
+            {canWrite && (
+              <Button size="sm" variant="outline" onClick={() => setShowCatDialog(true)}>
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                Yeni
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -312,7 +318,7 @@ export default function SettingsPage() {
                       </TableCell>
                       <TableCell className="text-sm font-medium">{cat.name}</TableCell>
                       <TableCell className="text-right">
-                        {!cat.is_system && (
+                        {!cat.is_system && canWrite && (
                           <Button
                             variant="ghost"
                             size="icon-xs"
@@ -349,7 +355,7 @@ export default function SettingsPage() {
                       </TableCell>
                       <TableCell className="text-sm font-medium">{cat.name}</TableCell>
                       <TableCell className="text-right">
-                        {!cat.is_system && (
+                        {!cat.is_system && canWrite && (
                           <Button
                             variant="ghost"
                             size="icon-xs"

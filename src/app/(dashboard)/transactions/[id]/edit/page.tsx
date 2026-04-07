@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getCategories } from "@/lib/actions/categories";
 import { getTransaction, updateTransaction } from "@/lib/actions/transactions";
 
@@ -50,7 +51,14 @@ export default function EditTransactionPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  const { organization } = useAuthStore();
+  const { organization, isLoading: authLoading } = useAuthStore();
+  const { isViewer } = usePermissions();
+
+  useEffect(() => {
+    if (!authLoading && isViewer) {
+      router.push("/transactions");
+    }
+  }, [authLoading, isViewer, router]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);

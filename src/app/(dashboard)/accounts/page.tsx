@@ -37,6 +37,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getAccounts, createAccount, seedDefaultAccounts } from "@/lib/actions/accounts";
 import { toast } from "sonner";
 
@@ -77,6 +78,7 @@ const typeGroupLabels: Record<string, string> = {
 
 export default function AccountsPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const { canWrite } = usePermissions();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -175,18 +177,20 @@ export default function AccountsPage() {
             Tekduzen Hesap Plani ({accounts.length} hesap)
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {accounts.length === 0 && (
-            <Button variant="outline" size="sm" onClick={handleSeed} disabled={seeding}>
-              {seeding ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-              Tekduzen Yukle
+        {canWrite && (
+          <div className="flex items-center gap-2">
+            {accounts.length === 0 && (
+              <Button variant="outline" size="sm" onClick={handleSeed} disabled={seeding}>
+                {seeding ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+                Tekduzen Yukle
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setShowDialog(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Yeni Hesap
             </Button>
-          )}
-          <Button size="sm" onClick={() => setShowDialog(true)}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Yeni Hesap
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Search */}
@@ -215,10 +219,12 @@ export default function AccountsPage() {
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
               Tekduzen Hesap Plani sablonunu yukleyerek hizlica baslayabilirsiniz.
             </p>
-            <Button className="mt-4" onClick={handleSeed} disabled={seeding}>
-              {seeding ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-              Tekduzen Hesap Planini Yukle
-            </Button>
+            {canWrite && (
+              <Button className="mt-4" onClick={handleSeed} disabled={seeding}>
+                {seeding ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+                Tekduzen Hesap Planini Yukle
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (

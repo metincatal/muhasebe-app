@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getBankAccounts, createBankAccount, deleteBankAccount } from "@/lib/actions/bank";
 import { toast } from "sonner";
 
@@ -53,6 +54,7 @@ interface BankAccount {
 
 export default function BankPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const { canWrite } = usePermissions();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
@@ -128,10 +130,12 @@ export default function BankPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Banka</h1>
           <p className="text-sm text-muted-foreground mt-1">Banka hesaplari ve bakiyeler</p>
         </div>
-        <Button size="sm" onClick={() => setShowDialog(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          Hesap Ekle
-        </Button>
+        {canWrite && (
+          <Button size="sm" onClick={() => setShowDialog(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Hesap Ekle
+          </Button>
+        )}
       </div>
 
       {/* Summary */}
@@ -186,10 +190,12 @@ export default function BankPage() {
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
               Banka hesaplarinizi ekleyerek bakiyelerinizi takip edin.
             </p>
-            <Button className="mt-4" onClick={() => setShowDialog(true)}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Ilk Hesabi Ekle
-            </Button>
+            {canWrite && (
+              <Button className="mt-4" onClick={() => setShowDialog(true)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Ilk Hesabi Ekle
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -209,21 +215,23 @@ export default function BankPage() {
                       </p>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" className="opacity-0 group-hover:opacity-100 transition-opacity" />}>
-                      <MoreHorizontal className="h-3.5 w-3.5" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        variant="destructive"
-                        className="cursor-pointer"
-                        onClick={() => handleDelete(account.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Sil
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {canWrite && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" className="opacity-0 group-hover:opacity-100 transition-opacity" />}>
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          variant="destructive"
+                          className="cursor-pointer"
+                          onClick={() => handleDelete(account.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Sil
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
 
                 {account.iban && (
