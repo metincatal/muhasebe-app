@@ -167,8 +167,8 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-md">
-                <Image src="/logo.png" alt="Siyakat" width={36} height={36} className="object-contain" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-md overflow-hidden bg-[#0f172a]">
+                <Image src="/logo.png" alt="Siyakat" width={44} height={44} className="object-contain scale-[1.15]" />
               </div>
               <div className="flex flex-col leading-none">
                 <span className="font-semibold text-[0.9rem] tracking-tight">

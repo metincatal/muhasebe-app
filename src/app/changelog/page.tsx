@@ -14,6 +14,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.6",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "iyileştirme", text: "Tarayıcı sekmesi, dock ve PWA ikonu Siyakat amblemiyle güncellendi (koyu arka planlı)" },
+      { type: "iyileştirme", text: "Giriş ve sidebar logosunda beyaz boşluk azaltıldı, logo büyütüldü" },
+    ],
+  },
+  {
     version: "1.0.5",
     date: "7 Nisan 2026",
     changes: [
