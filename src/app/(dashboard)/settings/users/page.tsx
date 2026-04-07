@@ -61,7 +61,7 @@ import { toast } from "sonner";
 interface Member {
   id: string;
   role: string;
-  created_at: string;
+  accepted_at: string;
   user_id: string;
   user_profiles: { id: string; full_name: string | null; avatar_url: string | null } | null;
 }
@@ -113,7 +113,7 @@ export default function UsersSettingsPage() {
         membersData.map((m) => ({
           id: m.id,
           role: m.role,
-          created_at: m.created_at,
+          accepted_at: (m as unknown as { accepted_at: string }).accepted_at,
           user_id: m.user_id,
           user_profiles: m.user_profiles as Member["user_profiles"],
         }))
@@ -318,7 +318,7 @@ export default function UsersSettingsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(member.created_at).toLocaleDateString("tr-TR", {
+                          {new Date(member.accepted_at).toLocaleDateString("tr-TR", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",

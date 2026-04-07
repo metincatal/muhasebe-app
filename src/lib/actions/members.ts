@@ -15,10 +15,9 @@ export async function getMembers(orgId: string) {
 
   // Mevcut kullanıcıyı doğrula ve bu org'un üyesi olduğunu kontrol et
   const { data: { user } } = await supabase.auth.getUser();
-  console.log("[getMembers] orgId:", orgId, "user:", user?.id ?? "NULL");
   if (!user) return [];
 
-  const { data: myMembership, error: membershipError } = await admin
+  const { data: myMembership } = await admin
     .from("organization_members")
     .select("role")
     .eq("organization_id", orgId)
@@ -26,15 +25,14 @@ export async function getMembers(orgId: string) {
     .eq("status", "active")
     .single();
 
-  console.log("[getMembers] myMembership:", myMembership?.role ?? "NULL", "err:", membershipError?.message ?? "none");
   if (!myMembership) return [];
 
   // Yetkili: tüm üyeleri getir
   const { data, error } = await admin
     .from("organization_members")
-    .select("id, role, created_at, user_id")
+    .select("id, role, accepted_at, user_id")
     .eq("organization_id", orgId)
-    .order("created_at");
+    .order("accepted_at");
 
   if (error) {
     console.error("getMembers error:", error);
