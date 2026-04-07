@@ -14,6 +14,15 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.1.1",
+    date: "8 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "Davet yoluyla katılan kullanıcı ekip üyeleri listesinde görünmüyor sorunu düzeltildi" },
+      { type: "düzeltme", text: "Davet akışında trigger tarafından gereksiz org oluşturulmasını engellendi" },
+      { type: "iyileştirme", text: "Auth provider org yükleme daha güvenilir hale getirildi (join yerine ayrı sorgu)" },
+    ],
+  },
+  {
     version: "1.1.0",
     date: "7 Nisan 2026",
     changes: [
