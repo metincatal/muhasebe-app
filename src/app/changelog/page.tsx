@@ -14,6 +14,13 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.1.2",
+    date: "8 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "Service worker güncellendi — eski SW'nin stale cache nedeniyle ekip üyeleri listesini boş göstermesi engellendi" },
+    ],
+  },
+  {
     version: "1.1.1",
     date: "8 Nisan 2026",
     changes: [

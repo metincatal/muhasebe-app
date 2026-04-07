@@ -1,14 +1,15 @@
-const CACHE_NAME = "muhasebe-pro-v8";
+const CACHE_NAME = "muhasebe-pro-v9";
 
 const STATIC_ASSETS = ["/offline"];
 
 self.addEventListener("install", (event) => {
+  // Eski SW varsa derhal devre dışı bırak — stale cache sorunlarını önler
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch(() => { });
     })
   );
-  // skipWaiting burada çağrılmıyor — güncelleme bildirimi için kullanıcı onayı bekleniyor
 });
 
 self.addEventListener("message", (event) => {
