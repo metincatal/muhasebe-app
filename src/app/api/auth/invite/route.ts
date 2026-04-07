@@ -3,82 +3,72 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // GET: token'ı doğrula — invitations RLS sadece org admin'e izin verdiğinden admin client kullanılıyor
 export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get("token");
-  if (!token) {
-    return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
-  }
-
-  let admin: ReturnType<typeof createAdminClient>;
   try {
-    admin = createAdminClient();
-  } catch (err) {
-    console.error("Admin client olusturulamadi (GET):", err);
-    return NextResponse.json({ error: "Sunucu yapilandirma hatasi. Yoneticiyle iletisime gecin." }, { status: 500 });
-  }
+    const token = request.nextUrl.searchParams.get("token");
+    if (!token) {
+      return NextResponse.json({ error: "Token gerekli" }, { status: 400 });
+    }
 
-  const { data: invitation, error } = await admin
-    .from("invitations")
-    .select("id, email, role, organization_id, expires_at, accepted_at")
-    .eq("token", token)
-    .single();
+    const admin = createAdminClient();
 
-  if (error || !invitation) {
-    console.error("Invitation query failed:", {
-      message: error?.message,
-      code: error?.code,
-      details: error?.details,
-      hint: error?.hint,
-      tokenPrefix: token?.substring(0, 8),
+    const { data: invitation, error } = await admin
+      .from("invitations")
+      .select("id, email, role, organization_id, expires_at, accepted_at")
+      .eq("token", token)
+      .single();
+
+    if (error || !invitation) {
+      console.error("Invitation query failed:", {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        tokenPrefix: token?.substring(0, 8),
+      });
+      const isNotFound = error?.code === "PGRST116";
+      return NextResponse.json(
+        { error: isNotFound ? "Gecersiz davet tokeni" : `Sunucu hatasi: ${error?.message || "Bilinmeyen"}` },
+        { status: isNotFound ? 404 : 500 }
+      );
+    }
+    if (invitation.accepted_at) {
+      return NextResponse.json({ error: "Bu davet zaten kullanilmis" }, { status: 400 });
+    }
+    if (new Date(invitation.expires_at) < new Date()) {
+      return NextResponse.json({ error: "Davet suresi dolmus" }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      email: invitation.email,
+      role: invitation.role,
+      organization_id: invitation.organization_id,
     });
-    // PGRST116 = "JSON object requested, single row not found" — token bulunamadı
-    const isNotFound = error?.code === "PGRST116";
-    return NextResponse.json(
-      { error: isNotFound ? "Gecersiz davet tokeni" : `Sunucu hatasi: ${error?.message || "Bilinmeyen"}` },
-      { status: isNotFound ? 404 : 500 }
-    );
+  } catch (err) {
+    console.error("Invite GET unhandled error:", err);
+    const message = err instanceof Error ? err.message : "Bilinmeyen sunucu hatasi";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-  if (invitation.accepted_at) {
-    return NextResponse.json({ error: "Bu davet zaten kullanilmis" }, { status: 400 });
-  }
-  if (new Date(invitation.expires_at) < new Date()) {
-    return NextResponse.json({ error: "Davet suresi dolmus" }, { status: 400 });
-  }
-
-  return NextResponse.json({
-    email: invitation.email,
-    role: invitation.role,
-    organization_id: invitation.organization_id,
-  });
 }
 
 // POST: kullanıcı oluştur + org'a ekle — admin client gerekli (RLS bypass + email confirm bypass)
 export async function POST(request: NextRequest) {
-  let body: { token?: string; full_name?: string; password?: string };
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Gecersiz istek" }, { status: 400 });
-  }
+    let body: { token?: string; full_name?: string; password?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Gecersiz istek" }, { status: 400 });
+    }
 
-  const { token, full_name, password } = body;
-  if (!token || !full_name || !password) {
-    return NextResponse.json({ error: "Token, ad soyad ve sifre gerekli" }, { status: 400 });
-  }
+    const { token, full_name, password } = body;
+    if (!token || !full_name || !password) {
+      return NextResponse.json({ error: "Token, ad soyad ve sifre gerekli" }, { status: 400 });
+    }
 
-  // Admin client oluştur
-  let admin: ReturnType<typeof createAdminClient>;
-  try {
-    admin = createAdminClient();
-  } catch (err) {
-    console.error("Admin client error:", err);
-    return NextResponse.json(
-      { error: "Sunucu yapilandirma hatasi. Lutfen yoneticiyle iletisime gecin." },
-      { status: 500 }
-    );
-  }
+    const admin = createAdminClient();
 
-  // 1. Daveti doğrula (admin client ile — RLS bypass)
-  const { data: invitation, error: invError } = await admin
+    // 1. Daveti doğrula (admin client ile — RLS bypass)
+    const { data: invitation, error: invError } = await admin
     .from("invitations")
     .select("id, email, role, organization_id, expires_at, accepted_at")
     .eq("token", token)
@@ -161,5 +151,10 @@ export async function POST(request: NextRequest) {
     .update({ accepted_at: new Date().toISOString() })
     .eq("id", invitation.id);
 
-  return NextResponse.json({ success: true, email: invitation.email });
+    return NextResponse.json({ success: true, email: invitation.email });
+  } catch (err) {
+    console.error("Invite POST unhandled error:", err);
+    const message = err instanceof Error ? err.message : "Bilinmeyen sunucu hatasi";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

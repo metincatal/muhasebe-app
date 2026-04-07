@@ -14,6 +14,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.0.5",
+    date: "7 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "Davet API route çöktüğünde anlamlı hata mesajı gösterilmesi sağlandı" },
+      { type: "iyileştirme", text: "Davet sayfasında JSON parse hatası ayrı yakalanıyor" },
+    ],
+  },
+  {
     version: "1.0.4",
     date: "7 Nisan 2026",
     changes: [

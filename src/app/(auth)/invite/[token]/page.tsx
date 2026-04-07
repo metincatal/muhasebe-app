@@ -27,19 +27,28 @@ export default function InvitePage() {
     async function validateToken() {
       try {
         const res = await fetch(`/api/auth/invite?token=${token}`);
-        const data = await res.json();
+        let data: Record<string, unknown>;
+        try {
+          data = await res.json();
+        } catch {
+          // API route HTML veya boş response döndüyse
+          setTokenValid(false);
+          setErrorMessage(`Sunucu hatasi (HTTP ${res.status}). Yoneticiyle iletisime gecin.`);
+          console.error("Token validation: response is not JSON, status:", res.status);
+          return;
+        }
         if (!res.ok || !data.email) {
           setTokenValid(false);
-          setErrorMessage(data.error || "Bilinmeyen hata");
+          setErrorMessage((data.error as string) || `Bilinmeyen hata (HTTP ${res.status})`);
           console.error("Token validation failed:", res.status, data);
         } else {
-          setInvitedEmail(data.email);
+          setInvitedEmail(data.email as string);
           setTokenValid(true);
         }
       } catch (err) {
         setTokenValid(false);
-        setErrorMessage("Sunucuya baglanilamadi");
-        console.error("Token validation error:", err);
+        setErrorMessage("Sunucuya baglanilamadi. Internet baglantinizi kontrol edin.");
+        console.error("Token validation network error:", err);
       }
     }
     validateToken();
