@@ -22,6 +22,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const pathLabels: Record<string, string> = {
   "/": "Genel Bakis",
@@ -81,6 +82,7 @@ export function DashboardHeader() {
   const pathname = usePathname();
   const breadcrumbs = getBreadcrumbs(pathname);
   const { theme, setTheme } = useTheme();
+  const { canWrite } = usePermissions();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/60 bg-background/80 backdrop-blur-md px-4">
@@ -114,33 +116,35 @@ export function DashboardHeader() {
       {/* Right Actions */}
       <div className="ml-auto flex items-center gap-2">
         {/* Quick Actions */}
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 bg-gradient-to-r from-slate-800 to-slate-900 dark:from-amber-500 dark:to-amber-600 text-white dark:text-slate-900 shadow-sm hover:shadow-md transition-shadow"
-              />
-            }
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Yeni</span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem render={<Link href="/transactions/new" />} className="cursor-pointer">
-              <Plus className="mr-2 h-4 w-4" />
-              Yeni Islem
-            </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href="/receipts/scan" />} className="cursor-pointer">
-              <ScanLine className="mr-2 h-4 w-4" />
-              Fis Tara
-            </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href="/invoices/new" />} className="cursor-pointer">
-              <Building2 className="mr-2 h-4 w-4" />
-              Yeni Fatura
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canWrite && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 bg-gradient-to-r from-slate-800 to-slate-900 dark:from-amber-500 dark:to-amber-600 text-white dark:text-slate-900 shadow-sm hover:shadow-md transition-shadow"
+                />
+              }
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Yeni</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem render={<Link href="/transactions/new" />} className="cursor-pointer">
+                <Plus className="mr-2 h-4 w-4" />
+                Yeni Islem
+              </DropdownMenuItem>
+              <DropdownMenuItem render={<Link href="/receipts/scan" />} className="cursor-pointer">
+                <ScanLine className="mr-2 h-4 w-4" />
+                Fis Tara
+              </DropdownMenuItem>
+              <DropdownMenuItem render={<Link href="/invoices/new" />} className="cursor-pointer">
+                <Building2 className="mr-2 h-4 w-4" />
+                Yeni Fatura
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Theme Toggle */}
         <DropdownMenu>
