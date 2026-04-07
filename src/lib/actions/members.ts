@@ -1,15 +1,34 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { sendInviteEmail } from "@/lib/email/send-invite";
 import { requireAdminAccess } from "@/lib/auth/role-check";
 import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getMembers(orgId: string) {
+  // Admin client kullan — org_members_select RLS politikasındaki SECURITY DEFINER
+  // context sorunu yaşandığında auth.uid() null dönebiliyor. Yetki kontrolünü kendimiz yapıyoruz.
   const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { data, error } = await supabase
+  // Mevcut kullanıcıyı doğrula ve bu org'un üyesi olduğunu kontrol et
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: myMembership } = await admin
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .single();
+
+  if (!myMembership) return [];
+
+  // Yetkili: tüm üyeleri getir
+  const { data, error } = await admin
     .from("organization_members")
     .select("id, role, created_at, user_id")
     .eq("organization_id", orgId)
@@ -22,7 +41,7 @@ export async function getMembers(orgId: string) {
 
   // Profil bilgilerini ayri sorgula
   const userIds = (data || []).map((m) => m.user_id);
-  const { data: profiles } = await supabase
+  const { data: profiles } = await admin
     .from("user_profiles")
     .select("id, full_name, avatar_url")
     .in("id", userIds);
@@ -39,9 +58,9 @@ export async function getMembers(orgId: string) {
 }
 
 export async function getMemberEmails(userIds: string[]) {
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("user_profiles")
     .select("id, email")
     .in("id", userIds);
@@ -53,7 +72,8 @@ export async function getMemberEmails(userIds: string[]) {
 
   const emailMap: Record<string, string> = {};
   (data || []).forEach((u) => {
-    emailMap[u.id] = u.email || "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    emailMap[u.id] = (u as any).email || "";
   });
   return emailMap;
 }
