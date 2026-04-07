@@ -242,26 +242,55 @@ export default function ReceiptsPage() {
                 : ""}
             </DialogTitle>
           </DialogHeader>
-          {viewingReceipt?.image_url ? (
-            <div className="flex flex-col items-center gap-4">
-              <img
-                src={viewingReceipt.image_url}
-                alt="Fis goruntusu"
-                className="w-full max-h-[60vh] object-contain rounded-lg border"
-              />
-              <div className="w-full flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
+          {viewingReceipt && (
+            <div className="space-y-3">
+              {/* Tutar + Durum */}
+              <div className="flex items-center justify-between p-4 bg-muted/40 rounded-xl border border-border/40">
+                <Badge className={`text-xs font-medium ${statusColors[viewingReceipt.status] || ""}`}>
                   {statusLabels[viewingReceipt.status] || viewingReceipt.status}
-                </span>
-                <span className="font-semibold tabular-nums">
+                </Badge>
+                <span className="text-2xl font-bold tabular-nums">
                   {formatCurrency(Number(viewingReceipt.total_amount || 0), viewingReceipt.currency)}
                 </span>
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
-              <ImageIcon className="h-12 w-12" />
-              <p className="text-sm">Bu fis icin gorsel bulunamadi</p>
+
+              {/* Detaylar */}
+              <div className="rounded-xl border border-border/40 divide-y divide-border/40">
+                {viewingReceipt.tax_amount ? (
+                  <div className="flex justify-between px-4 py-2.5 text-sm">
+                    <span className="text-muted-foreground">KDV</span>
+                    <span className="font-medium">
+                      {formatCurrency(Number(viewingReceipt.tax_amount), viewingReceipt.currency)}
+                    </span>
+                  </div>
+                ) : null}
+                {viewingReceipt.categories && (
+                  <div className="flex justify-between px-4 py-2.5 text-sm">
+                    <span className="text-muted-foreground">Kategori</span>
+                    <span className="font-medium">{viewingReceipt.categories.name}</span>
+                  </div>
+                )}
+                {viewingReceipt.transactions && (
+                  <div className="flex justify-between px-4 py-2.5 text-sm">
+                    <span className="text-muted-foreground">Islem</span>
+                    <span className="font-medium truncate max-w-[200px]">
+                      {viewingReceipt.transactions.description}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between px-4 py-2.5 text-sm">
+                  <span className="text-muted-foreground">Tarih</span>
+                  <span className="font-medium">
+                    {viewingReceipt.date
+                      ? new Date(viewingReceipt.date).toLocaleDateString("tr-TR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : "—"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>

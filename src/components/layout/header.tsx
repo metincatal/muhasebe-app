@@ -46,6 +46,19 @@ const pathLabels: Record<string, string> = {
   "/settings/currencies": "Para Birimleri",
 };
 
+// Dinamik segment etiketleri (tam path eşleşmesi olmadığında)
+const segmentLabels: Record<string, string> = {
+  edit: "Duzenle",
+  new: "Yeni",
+  scan: "Tara",
+  reconcile: "Mutabakat",
+};
+
+// UUID veya ham ID segmentlerini tespit et
+function isId(segment: string): boolean {
+  return /^[0-9a-f]{8,}(-[0-9a-f]{4,})+/i.test(segment);
+}
+
 function getBreadcrumbs(pathname: string) {
   if (pathname === "/") return [{ label: "Genel Bakis", href: "/" }];
 
@@ -55,7 +68,9 @@ function getBreadcrumbs(pathname: string) {
 
   for (const segment of segments) {
     currentPath += `/${segment}`;
-    const label = pathLabels[currentPath] || segment;
+    // UUID/ID segmentlerini breadcrumb'dan gizle
+    if (isId(segment)) continue;
+    const label = pathLabels[currentPath] ?? segmentLabels[segment] ?? segment;
     crumbs.push({ label, href: currentPath });
   }
 
