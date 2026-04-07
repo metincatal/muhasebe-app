@@ -8,16 +8,13 @@ import { requireAdminAccess } from "@/lib/auth/role-check";
 import type { ActionReturn } from "@/lib/actions/types";
 
 export async function getMembers(orgId: string) {
-  console.log("[getMembers] called, orgId:", orgId);
-
   // Admin client kullan — org_members_select RLS politikasındaki SECURITY DEFINER
   // context sorunu yaşandığında auth.uid() null dönebiliyor. Yetki kontrolünü kendimiz yapıyoruz.
   const supabase = await createClient();
   const admin = createAdminClient();
 
   // Mevcut kullanıcıyı doğrula ve bu org'un üyesi olduğunu kontrol et
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  console.log("[getMembers] user:", user?.id ?? "NULL", "authError:", authError?.message ?? "none");
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data: myMembership, error: membershipError } = await admin
@@ -28,8 +25,6 @@ export async function getMembers(orgId: string) {
     .eq("status", "active")
     .single();
 
-  console.log("[getMembers] orgId:", orgId, "userId:", user.id, "myMembership:", myMembership, "err:", membershipError?.message);
-
   if (!myMembership) return [];
 
   // Yetkili: tüm üyeleri getir
@@ -38,8 +33,6 @@ export async function getMembers(orgId: string) {
     .select("id, role, created_at, user_id")
     .eq("organization_id", orgId)
     .order("created_at");
-
-  console.log("[getMembers] data count:", data?.length, "error:", error?.message);
 
   if (error) {
     console.error("getMembers error:", error);
