@@ -15,6 +15,13 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.4.2",
+    date: "8 Nisan 2026",
+    changes: [
+      { type: "iyileştirme", text: "İzleyici rolündeki kullanıcılara özel hızlı erişim kısayolları: İşlemler, Faturalar, Fişler ve Raporlar" },
+    ],
+  },
+  {
     version: "1.4.1",
     date: "8 Nisan 2026",
     changes: [

@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Info,
   XCircle,
+  Receipt,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
@@ -365,30 +366,53 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Access */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Fis Tara", icon: ScanLine, href: "/receipts/scan", desc: "Fisinizi fotograflayin", writeOnly: true },
-          { label: "Yeni Islem", icon: Plus, href: "/transactions/new", desc: "Gelir veya gider ekleyin", writeOnly: true },
-          { label: "Fatura Olustur", icon: FileText, href: "/invoices/new", desc: "Satis faturasi kesin", writeOnly: true },
-          { label: "Raporlar", icon: TrendingUp, href: "/reports", desc: "Finansal analizler", writeOnly: false },
-        ].filter((item) => !item.writeOnly || canWrite).map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="group flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60 bg-card hover:bg-muted/50 hover:border-border transition-all duration-200 text-center"
-          >
-            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center group-hover:bg-amber/10 transition-colors">
-              <item.icon className="h-5 w-5 text-muted-foreground group-hover:text-amber transition-colors" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">{item.label}</p>
-              <p className="text-[0.65rem] text-muted-foreground mt-0.5">
-                {item.desc}
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {canWrite ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Fis Tara", icon: ScanLine, href: "/receipts/scan", desc: "Fisinizi fotograflayin" },
+            { label: "Yeni Islem", icon: Plus, href: "/transactions/new", desc: "Gelir veya gider ekleyin" },
+            { label: "Fatura Olustur", icon: FileText, href: "/invoices/new", desc: "Satis faturasi kesin" },
+            { label: "Raporlar", icon: TrendingUp, href: "/reports", desc: "Finansal analizler" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60 bg-card hover:bg-muted/50 hover:border-border transition-all duration-200 text-center"
+            >
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center group-hover:bg-amber/10 transition-colors">
+                <item.icon className="h-5 w-5 text-muted-foreground group-hover:text-amber transition-colors" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="text-[0.65rem] text-muted-foreground mt-0.5">{item.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Islemler", icon: ArrowUpRight, href: "/transactions", desc: "Gelir ve giderleri goruntule" },
+            { label: "Faturalar", icon: FileText, href: "/invoices", desc: "Faturalari incele" },
+            { label: "Fisler", icon: Receipt, href: "/receipts", desc: "Taranmis fisleri goruntule" },
+            { label: "Raporlar", icon: TrendingUp, href: "/reports", desc: "Finansal analizler" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60 bg-card hover:bg-muted/50 hover:border-border transition-all duration-200 text-center"
+            >
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center group-hover:bg-amber/10 transition-colors">
+                <item.icon className="h-5 w-5 text-muted-foreground group-hover:text-amber transition-colors" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="text-[0.65rem] text-muted-foreground mt-0.5">{item.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
