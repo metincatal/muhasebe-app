@@ -55,7 +55,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth-store";
 
 const navItems = [
@@ -152,9 +151,7 @@ export function AppSidebar() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    toast.success("Cikis yapildi");
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   }
 
   function isActive(url: string) {
