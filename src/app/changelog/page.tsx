@@ -14,6 +14,15 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.3.0",
+    date: "8 Nisan 2026",
+    changes: [
+      { type: "yeni", text: "Kayıtlı kullanıcıları davet etme akışı: sistemde hesabı olan kullanıcılar 'Daveti Kabul Et' butonuyla direkt katılabilir" },
+      { type: "yeni", text: "Davet sayfası: giriş yapılmış/yapılmamış ve doğru/yanlış hesap durumları için ayrı ekranlar" },
+      { type: "iyileştirme", text: "Zaten üye olan kullanıcı daveti tekrar kabul etmeye çalışırsa 'Zaten üyesiniz' mesajı gösterilir" },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "8 Nisan 2026",
     changes: [
