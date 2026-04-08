@@ -367,11 +367,11 @@ export default function DashboardPage() {
       {/* Quick Access */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Fis Tara", icon: ScanLine, href: "/receipts/scan", desc: "Fisinizi fotograflayin" },
-          { label: "Yeni Islem", icon: Plus, href: "/transactions/new", desc: "Gelir veya gider ekleyin" },
-          { label: "Fatura Olustur", icon: FileText, href: "/invoices/new", desc: "Satis faturasi kesin" },
-          { label: "Raporlar", icon: TrendingUp, href: "/reports", desc: "Finansal analizler" },
-        ].map((item) => (
+          { label: "Fis Tara", icon: ScanLine, href: "/receipts/scan", desc: "Fisinizi fotograflayin", writeOnly: true },
+          { label: "Yeni Islem", icon: Plus, href: "/transactions/new", desc: "Gelir veya gider ekleyin", writeOnly: true },
+          { label: "Fatura Olustur", icon: FileText, href: "/invoices/new", desc: "Satis faturasi kesin", writeOnly: true },
+          { label: "Raporlar", icon: TrendingUp, href: "/reports", desc: "Finansal analizler", writeOnly: false },
+        ].filter((item) => !item.writeOnly || canWrite).map((item) => (
           <Link
             key={item.href}
             href={item.href}

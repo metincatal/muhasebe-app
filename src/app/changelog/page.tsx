@@ -15,6 +15,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.4.1",
+    date: "8 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "İzleyici rolündeki kullanıcılarda dashboard hızlı erişim butonları (Fiş Tara, Yeni İşlem, Fatura Oluştur) gizlendi" },
+      { type: "iyileştirme", text: "PWA kurulum bildirimi artık 'Hayır' butonuna basıldıktan sonra 14 gün boyunca tekrar gösterilmiyor" },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "8 Nisan 2026",
     changes: [

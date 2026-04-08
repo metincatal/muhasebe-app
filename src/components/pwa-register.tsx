@@ -15,6 +15,8 @@ type VersionData = { version: string; build: string };
 
 const VERSION_KEY = "app_version";
 const SNOOZE_KEY = "update_snooze_until";
+const INSTALL_DISMISSED_KEY = "pwa_install_dismissed_until";
+const INSTALL_SNOOZE_DAYS = 14; // 14 gün sonra tekrar göster
 const POLL_INTERVAL = 5 * 60 * 1000; // 5 dakika
 
 async function fetchVersion(): Promise<VersionData | null> {
@@ -78,6 +80,8 @@ export function PwaRegister() {
 
     const handler = (e: Event) => {
       e.preventDefault();
+      const dismissedUntil = localStorage.getItem(INSTALL_DISMISSED_KEY);
+      if (dismissedUntil && Date.now() < Number(dismissedUntil)) return;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstall(true);
     };
@@ -217,7 +221,11 @@ export function PwaRegister() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowInstall(false)}
+                  onClick={() => {
+                    const until = Date.now() + INSTALL_SNOOZE_DAYS * 24 * 60 * 60 * 1000;
+                    localStorage.setItem(INSTALL_DISMISSED_KEY, String(until));
+                    setShowInstall(false);
+                  }}
                   className="ml-2 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -241,7 +249,11 @@ export function PwaRegister() {
                   size="sm"
                   variant="ghost"
                   className="h-8 text-xs"
-                  onClick={() => setShowInstall(false)}
+                  onClick={() => {
+                    const until = Date.now() + INSTALL_SNOOZE_DAYS * 24 * 60 * 60 * 1000;
+                    localStorage.setItem(INSTALL_DISMISSED_KEY, String(until));
+                    setShowInstall(false);
+                  }}
                 >
                   Hayır
                 </Button>
