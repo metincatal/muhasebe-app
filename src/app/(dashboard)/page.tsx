@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuthStore } from "@/stores/auth-store";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getDashboardSummary, getTransactions } from "@/lib/actions/transactions";
 import { getDashboardAlerts, type DashboardAlert } from "@/lib/actions/tax";
 
@@ -44,6 +45,7 @@ interface Transaction {
 
 export default function DashboardPage() {
   const { organization, isLoading: authLoading } = useAuthStore();
+  const { canWrite } = usePermissions();
   const [summary, setSummary] = useState<DashboardData | null>(null);
   const [recentTx, setRecentTx] = useState<Transaction[]>([]);
   const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
@@ -104,16 +106,18 @@ export default function DashboardPage() {
             {new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" })} finansal ozeti
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" render={<Link href="/receipts/scan" />}>
-            <ScanLine className="mr-1.5 h-4 w-4" />
-            Fis Tara
-          </Button>
-          <Button size="sm" render={<Link href="/transactions/new" />}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Yeni Islem
-          </Button>
-        </div>
+        {canWrite && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" render={<Link href="/receipts/scan" />}>
+              <ScanLine className="mr-1.5 h-4 w-4" />
+              Fis Tara
+            </Button>
+            <Button size="sm" render={<Link href="/transactions/new" />}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Yeni Islem
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Alerts */}
