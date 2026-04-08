@@ -14,6 +14,15 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.4.0",
+    date: "8 Nisan 2026",
+    changes: [
+      { type: "yeni", text: "Çoklu organizasyon desteği: birden fazla organizasyona üye kullanıcılar sidebar'dan org değiştirebilir" },
+      { type: "yeni", text: "Org switcher: logo yanındaki dropdown ile aktif organizasyon seçimi; son kullanılan org otomatik hatırlanır" },
+      { type: "düzeltme", text: "Birden fazla organizasyona üye kullanıcılarda dashboard'a giriş çökmesi giderildi" },
+    ],
+  },
+  {
     version: "1.3.0",
     date: "8 Nisan 2026",
     changes: [

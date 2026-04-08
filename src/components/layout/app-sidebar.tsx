@@ -47,6 +47,8 @@ import {
   ChevronRight,
   Calculator,
   Target,
+  Building2,
+  Check,
 } from "lucide-react";
 import {
   Collapsible,
@@ -104,7 +106,7 @@ export function AppSidebar() {
   const router = useRouter();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { user, organization, role } = useAuthStore();
+  const { user, organization, role, memberships, setActiveMembership } = useAuthStore();
   const menuRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
@@ -166,19 +168,63 @@ export function AppSidebar() {
       <SidebarHeader className="pb-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/" />}>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-md overflow-hidden bg-[#0f172a]">
-                <Image src="/logo.png" alt="Siyakat" width={44} height={44} className="object-contain scale-[1.15]" />
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="font-semibold text-[0.9rem] tracking-tight">
-                  Siyakat
-                </span>
-                <span className="text-[0.7rem] text-muted-foreground mt-0.5 truncate max-w-[120px]">
-                  {organization?.name || "Finans Yonetimi"}
-                </span>
-              </div>
-            </SidebarMenuButton>
+            {memberships.length > 1 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<SidebarMenuButton size="lg" className="transition-colors hover:bg-sidebar-accent" />}
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-md overflow-hidden bg-[#0f172a]">
+                    <Image src="/logo.png" alt="Siyakat" width={44} height={44} className="object-contain scale-[1.15]" />
+                  </div>
+                  <div className="flex flex-col leading-none">
+                    <span className="font-semibold text-[0.9rem] tracking-tight">
+                      Siyakat
+                    </span>
+                    <span className="text-[0.7rem] text-muted-foreground mt-0.5 truncate max-w-[100px]">
+                      {organization?.name || "Finans Yonetimi"}
+                    </span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground/50" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+                  side={isCollapsed ? "right" : "bottom"}
+                  align="start"
+                  sideOffset={8}
+                >
+                  {memberships.map((m) => (
+                    <DropdownMenuItem
+                      key={m.orgId}
+                      onClick={() => {
+                        setActiveMembership(m.orgId);
+                        router.refresh();
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="flex-1 truncate">{m.orgName}</span>
+                      {organization?.id === m.orgId && (
+                        <Check className="ml-2 h-4 w-4 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <SidebarMenuButton size="lg" render={<Link href="/" />}>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-md overflow-hidden bg-[#0f172a]">
+                  <Image src="/logo.png" alt="Siyakat" width={44} height={44} className="object-contain scale-[1.15]" />
+                </div>
+                <div className="flex flex-col leading-none">
+                  <span className="font-semibold text-[0.9rem] tracking-tight">
+                    Siyakat
+                  </span>
+                  <span className="text-[0.7rem] text-muted-foreground mt-0.5 truncate max-w-[120px]">
+                    {organization?.name || "Finans Yonetimi"}
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

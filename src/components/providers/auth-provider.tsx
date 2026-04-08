@@ -3,12 +3,12 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useAuthStore } from "@/stores/auth-store";
+import { useAuthStore, type Membership } from "@/stores/auth-store";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const supabase = createClient();
-  const { setUser, setOrganization, setRole, setLoading, reset } = useAuthStore();
+  const { setUser, setOrganization, setRole, setMemberships, setLoading, reset } = useAuthStore();
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -41,43 +41,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        // Organizasyon uyeligi — join yerine ayrı sorgu (join + RLS edge case'lerinden kaçınmak için)
-        const { data: memberships } = await supabase
+        // Tüm aktif üyelikler
+        const { data: memberRows } = await supabase
           .from("organization_members")
           .select("organization_id, role")
           .eq("user_id", user.id)
           .eq("status", "active")
-          .order("accepted_at", { ascending: false })
-          .limit(1);
+          .order("accepted_at", { ascending: false });
 
-        const membership = memberships?.[0] ?? null;
+        if (!memberRows || memberRows.length === 0) {
+          setLoading(false);
+          return;
+        }
 
-        if (membership) {
-          setRole(membership.role as "admin" | "accountant" | "viewer");
+        const orgIds = memberRows.map((m) => m.organization_id);
 
-          const { data: org } = await supabase
-            .from("organizations")
-            .select("id, name, type, default_currency")
-            .eq("id", membership.organization_id)
-            .single();
+        const { data: orgs } = await supabase
+          .from("organizations")
+          .select("id, name, type, default_currency")
+          .in("id", orgIds);
 
-          if (org) {
-            setOrganization({
-              id: org.id,
-              name: org.name,
-              type: org.type as "individual" | "corporate",
+        if (!orgs) {
+          setLoading(false);
+          return;
+        }
+
+        const memberships: Membership[] = memberRows
+          .map((m) => {
+            const org = orgs.find((o) => o.id === m.organization_id);
+            if (!org) return null;
+            return {
+              orgId: org.id,
+              orgName: org.name,
+              orgType: org.type as "individual" | "corporate",
               defaultCurrency: org.default_currency,
-            });
+              role: m.role as "admin" | "accountant" | "viewer",
+            };
+          })
+          .filter((m): m is Membership => m !== null);
 
-            // Varsayilan kategorileri kontrol et, yoksa olustur
-            const { count } = await supabase
-              .from("categories")
-              .select("*", { count: "exact", head: true })
-              .eq("organization_id", org.id);
+        setMemberships(memberships);
 
-            if (count === 0) {
-              await seedDefaultCategories(org.id);
-            }
+        // Aktif org: localStorage > ilk üyelik
+        const lastUsedOrgId = typeof window !== "undefined"
+          ? localStorage.getItem("lastUsedOrgId")
+          : null;
+
+        const activeMembership =
+          (lastUsedOrgId && memberships.find((m) => m.orgId === lastUsedOrgId)) ||
+          memberships[0];
+
+        if (activeMembership) {
+          setOrganization({
+            id: activeMembership.orgId,
+            name: activeMembership.orgName,
+            type: activeMembership.orgType,
+            defaultCurrency: activeMembership.defaultCurrency,
+          });
+          setRole(activeMembership.role);
+
+          // Varsayılan kategorileri kontrol et, yoksa oluştur
+          const { count } = await supabase
+            .from("categories")
+            .select("*", { count: "exact", head: true })
+            .eq("organization_id", activeMembership.orgId);
+
+          if (count === 0) {
+            await seedDefaultCategories(activeMembership.orgId);
           }
         }
       } catch (err) {
