@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!memberRows || memberRows.length === 0) {
           setLoading(false);
+          router.push("/setup");
           return;
         }
 
