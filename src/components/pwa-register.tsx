@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowUp, Download, RefreshCw, X } from "lucide-react";
+import { useUpdateStore } from "@/stores/update-store";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -13,6 +14,7 @@ interface BeforeInstallPromptEvent extends Event {
 type VersionData = { version: string; build: string };
 
 const VERSION_KEY = "app_version";
+const SNOOZE_KEY = "update_snooze_until";
 const POLL_INTERVAL = 5 * 60 * 1000; // 5 dakika
 
 async function fetchVersion(): Promise<VersionData | null> {
@@ -28,14 +30,20 @@ async function fetchVersion(): Promise<VersionData | null> {
 }
 
 export function PwaRegister() {
+  const pathname = usePathname();
+  const isChangelog = pathname === "/changelog";
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstall, setShowInstall] = useState(false);
-  const [showUpdate, setShowUpdate] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState<string | null>(null);
-  const [newVersion, setNewVersion] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const { showUpdate, currentVersion, newVersion, isSameBuild, setUpdateAvailable, dismiss, remindLater } =
+    useUpdateStore();
+
   async function checkForUpdate() {
+    // Snooze kontrolü
+    const snoozeUntil = localStorage.getItem(SNOOZE_KEY);
+    if (snoozeUntil && Date.now() < Number(snoozeUntil)) return;
+
     const latest = await fetchVersion();
     if (!latest) return;
 
@@ -50,21 +58,16 @@ export function PwaRegister() {
       const parsed = JSON.parse(storedRaw);
       if (parsed.build) stored = parsed as VersionData;
     } catch {
-      // Eski format (düz string) — yeni formata geç
+      // Eski format (düz string)
     }
 
     if (!stored) {
-      // Eski format (düz string) — zaten farklı bir deployment var, bildirimi göster
-      setCurrentVersion("—");
-      setNewVersion(latest.version);
-      setShowUpdate(true);
+      setUpdateAvailable("—", latest.version);
       return;
     }
 
     if (stored.build !== latest.build) {
-      setCurrentVersion(stored.version);
-      setNewVersion(latest.version);
-      setShowUpdate(true);
+      setUpdateAvailable(stored.version, latest.version);
     }
   }
 
@@ -109,17 +112,17 @@ export function PwaRegister() {
   function handleUpdate() {
     fetchVersion().then((v) => {
       if (v) localStorage.setItem(VERSION_KEY, JSON.stringify(v));
+      localStorage.removeItem(SNOOZE_KEY);
       window.location.reload();
     });
   }
 
   return (
     <>
-      {/* Güncelleme bildirimi */}
-      {showUpdate && (
+      {/* Güncelleme bildirimi — sadece changelog dışı sayfalarda */}
+      {showUpdate && !isChangelog && (
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="bg-card rounded-xl shadow-2xl border border-border/60 overflow-hidden">
-            {/* Gradient accent bar */}
             <div className="h-[3px] bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
 
             <div className="p-4">
@@ -130,22 +133,24 @@ export function PwaRegister() {
                     <ArrowUp className="h-3.5 w-3.5 text-indigo-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold tracking-tight">Yeni Sürüm Hazır</p>
+                    <p className="text-sm font-semibold tracking-tight">
+                      {isSameBuild ? "Bakım Güncellemesi" : "Yeni Sürüm Hazır"}
+                    </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-none">
-                      Güncelleme bekliyor
+                      {isSameBuild ? "Performans ve güvenlik iyileştirmesi" : "Güncelleme bekliyor"}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowUpdate(false)}
+                  onClick={dismiss}
                   className="ml-2 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
 
-              {/* Versiyon karşılaştırma */}
-              {(currentVersion || newVersion) && (
+              {/* Versiyon karşılaştırma — sadece farklı sürümlerde */}
+              {!isSameBuild && (currentVersion || newVersion) && (
                 <div className="flex items-center gap-2 mb-3.5 bg-muted/40 rounded-lg px-3 py-2 border border-border/40">
                   <span className="text-xs font-mono text-muted-foreground tabular-nums">
                     {currentVersion ?? "—"}
@@ -171,19 +176,21 @@ export function PwaRegister() {
                   <RefreshCw className="mr-1.5 h-3 w-3" />
                   Şimdi Güncelle
                 </Button>
-                <Link
-                  href="/changelog"
-                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium"
-                >
-                  Değişiklikler →
-                </Link>
+                {!isSameBuild && (
+                  <a
+                    href="/changelog"
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium"
+                  >
+                    Değişiklikler →
+                  </a>
+                )}
               </div>
 
               <button
-                onClick={() => setShowUpdate(false)}
+                onClick={remindLater}
                 className="mt-2.5 w-full text-center text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
               >
-                Sonra hatırlat
+                Sonra hatırlat (1 saat)
               </button>
             </div>
           </div>

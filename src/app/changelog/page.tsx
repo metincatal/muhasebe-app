@@ -1,6 +1,7 @@
 import { ArrowLeft, Tag } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ChangelogUpdateBanner } from "@/components/changelog-update-banner";
 
 export const metadata: Metadata = {
   title: "Değişiklik Günlüğü — Siyakat",
@@ -183,6 +184,8 @@ export default function ChangelogPage() {
             <ArrowLeft className="h-3.5 w-3.5" />
             Geri dön
           </Link>
+
+          <ChangelogUpdateBanner />
 
           <div className="flex items-center gap-3 mb-3">
             <div className="h-8 w-1 rounded-full bg-gradient-to-b from-blue-500 via-indigo-500 to-violet-500" />
