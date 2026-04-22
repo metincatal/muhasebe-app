@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseReceipt } from "@/lib/ai/ocr";
 
+export const maxDuration = 60;
+
 function httpStatus(error: unknown): number | undefined {
   if (error && typeof error === "object" && "status" in error) {
     return (error as { status: number }).status;
@@ -62,6 +64,26 @@ function toUserMessage(error: unknown): { message: string; status: number } {
   if (msg.includes("ECONNREFUSED") || msg.includes("ENOTFOUND") || msg.includes("fetch failed")) {
     return {
       message: "Bağlantı hatası. İnternet bağlantınızı kontrol edip tekrar deneyin.",
+      status: 503,
+    };
+  }
+
+  // Gemini SDK'dan gelen eşleşmemiş HTTP hataları (401, 403, 404 vb.)
+  if (code === 401 || code === 403 || msg.includes("401") || msg.includes("403")) {
+    return {
+      message: "Fiş tarama servisi erişim hatası. Yöneticiyle iletişime geçin.",
+      status: 503,
+    };
+  }
+  if (code === 404 || msg.includes("not found") || msg.includes("Not Found")) {
+    return {
+      message: "Fiş tarama modeli kullanılamıyor. Yöneticiyle iletişime geçin.",
+      status: 503,
+    };
+  }
+  if (code !== undefined) {
+    return {
+      message: "Fiş okuma servisi şu an kullanılamıyor. Tekrar deneyin.",
       status: 503,
     };
   }

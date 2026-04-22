@@ -3,7 +3,6 @@ import type { ReceiptOCRResult } from "@/types";
 
 const PRIMARY_MODEL = "gemini-2.5-flash";
 const FALLBACK_MODEL = "gemini-1.5-flash";
-const RETRY_DELAYS_MS = [1000, 2000];
 
 const OCR_PROMPT = `Bu bir Turk fisi/makbuzu fotografidir. Lutfen asagidaki bilgileri JSON formatinda cikar:
 
@@ -77,25 +76,38 @@ async function callGemini(modelName: string, parts: Part[]): Promise<string> {
   return text;
 }
 
+// 503 veya 404 (model bulunamadı) → fallback denemeli
+function shouldFallback(error: unknown): boolean {
+  if (isOverloaded(error)) return true;
+  const code = httpStatus(error);
+  if (code === 404) return true;
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes("404") || msg.includes("not found") || msg.includes("Not Found");
+}
+
 async function callWithFallback(parts: Part[]): Promise<string> {
-  // 3 deneme: gemini-2.5-flash, 1s bekle, tekrar, 2s bekle, tekrar
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) {
-      await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
-    }
-    try {
-      return await callGemini(PRIMARY_MODEL, parts);
-    } catch (error) {
-      if (!isOverloaded(error)) throw error;
-    }
+  // Birincil modeli 1 kez dene, 503/404 gelirse hemen yedek modele geç
+  // (uzun retry döngüsü Vercel timeout riskini artırır)
+  try {
+    return await callGemini(PRIMARY_MODEL, parts);
+  } catch (primaryError) {
+    if (!shouldFallback(primaryError)) throw primaryError;
   }
 
-  // Birincil model 503 vermeye devam etti → yedek modele geç
+  // Kısa bekleme sonrası birincili 1 kez daha dene (geçici yoğunluk için)
+  await new Promise((r) => setTimeout(r, 500));
+  try {
+    return await callGemini(PRIMARY_MODEL, parts);
+  } catch (primaryError2) {
+    if (!shouldFallback(primaryError2)) throw primaryError2;
+  }
+
+  // Birincil model yine başarısız → yedek modele geç
+  // Yedek modeldeki HERHANGİ bir hata → SERVICE_OVERLOADED
   try {
     return await callGemini(FALLBACK_MODEL, parts);
-  } catch (error) {
-    if (isOverloaded(error)) throw new Error("SERVICE_OVERLOADED");
-    throw error;
+  } catch {
+    throw new Error("SERVICE_OVERLOADED");
   }
 }
 
