@@ -15,6 +15,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.4.4",
+    date: "22 Nisan 2026",
+    changes: [
+      { type: "yeni", text: "Fiş tarama arka planda çalışır: başka bir ekrana geçilse bile işlem devam eder, tamamlanınca bildirim gösterilir" },
+      { type: "iyileştirme", text: "Fiş tarama hataları daha ayrıntılı: güvenlik filtresi, bozuk fotoğraf, zaman aşımı ve bağlantı hatası ayrı ayrı açıklanıyor" },
+    ],
+  },
+  {
     version: "1.4.3",
     date: "22 Nisan 2026",
     changes: [

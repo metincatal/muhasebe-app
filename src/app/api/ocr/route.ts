@@ -28,6 +28,24 @@ function toUserMessage(error: unknown): { message: string; status: number } {
       status: 422,
     };
   }
+  if (msg.startsWith("BLOCKED:") || msg.toLowerCase().includes("safety") || msg.toLowerCase().includes("recitation")) {
+    return {
+      message: "Bu fotoğraf güvenlik filtresi nedeniyle işlenemedi. Farklı bir fotoğraf deneyin.",
+      status: 422,
+    };
+  }
+  if (msg.includes("400") || msg.includes("Bad Request") || msg.includes("invalid_argument")) {
+    return {
+      message: "Fotoğraf formatı desteklenmiyor veya bozuk. Farklı bir fotoğraf deneyin.",
+      status: 400,
+    };
+  }
+  if (msg.includes("timeout") || msg.includes("ETIMEDOUT") || msg.includes("DEADLINE_EXCEEDED")) {
+    return {
+      message: "Fiş okuma zaman aşımına uğradı. Tekrar deneyin.",
+      status: 503,
+    };
+  }
   if (msg.includes("GEMINI_API_KEY") || msg.includes("API_KEY") || msg.includes("401")) {
     return {
       message: "Fiş tarama servisi yapılandırılmamış. Yöneticiyle iletişime geçin.",

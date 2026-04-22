@@ -58,6 +58,13 @@ function isOverloaded(error: unknown): boolean {
 async function callGemini(modelName: string, parts: Part[]): Promise<string> {
   const model = getGemini().getGenerativeModel({ model: modelName });
   const result = await model.generateContent(parts);
+
+  // Yanıt bloklanmışsa (güvenlik filtresi, telif vb.) text() throw etmeden önce yakala
+  const candidate = result.response.candidates?.[0];
+  if (candidate?.finishReason && !["STOP", "MAX_TOKENS"].includes(candidate.finishReason as string)) {
+    throw new Error(`BLOCKED:${candidate.finishReason}`);
+  }
+
   const text = result.response.text();
   if (!text) throw new Error("EMPTY_RESPONSE");
   return text;

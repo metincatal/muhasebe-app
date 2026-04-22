@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { DashboardHeader } from "@/components/layout/header";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { OcrNotifier } from "@/components/ocr-notifier";
 
 export default function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default function DashboardLayout({
           <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
         </SidebarInset>
       </SidebarProvider>
+      <OcrNotifier />
     </AuthProvider>
   );
 }
