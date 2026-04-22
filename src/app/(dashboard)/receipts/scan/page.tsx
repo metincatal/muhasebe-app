@@ -167,7 +167,7 @@ export default function ScanReceiptPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ocrStore.status]);
 
-  function processImage(file: File, imageDataUrl?: string) {
+  const processImage = useCallback((file: File, imageDataUrl?: string) => {
     if (!canWrite) {
       toast.error("Bu işlemi yapmaya yetkiniz yok", {
         description: "Fiş tarama sadece yönetici ve muhasebeciler tarafından yapılabilir.",
@@ -176,7 +176,7 @@ export default function ScanReceiptPage() {
     }
     setStep("processing");
     ocrStore.startProcessing(file, imageDataUrl);
-  }
+  }, [canWrite, ocrStore]);
 
   const handleCapture = useCallback(() => {
     const dataUrl = capturePhoto();
@@ -184,16 +184,14 @@ export default function ScanReceiptPage() {
       stopCamera();
       processImage(dataURLtoFile(dataUrl, "receipt.jpg"), dataUrl);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [capturePhoto, stopCamera]);
+  }, [capturePhoto, stopCamera, processImage]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const resized = await resizeImage(file);
     processImage(resized);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [processImage]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
