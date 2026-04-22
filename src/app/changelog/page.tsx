@@ -15,6 +15,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.4.3",
+    date: "22 Nisan 2026",
+    changes: [
+      { type: "iyileştirme", text: "Fiş taramada AI servisi yoğunken otomatik yeniden deneme ve yedek model desteği eklendi" },
+      { type: "iyileştirme", text: "Fiş tarama hataları artık kullanıcının anlayabileceği dilde gösteriliyor (servis yoğunluğu, bağlantı kesintisi, okunamayan fotoğraf vb.)" },
+    ],
+  },
+  {
     version: "1.4.2",
     date: "8 Nisan 2026",
     changes: [

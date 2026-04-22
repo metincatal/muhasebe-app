@@ -1,5 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Part } from "@google/generative-ai";
 import type { ReceiptOCRResult } from "@/types";
+
+const PRIMARY_MODEL = "gemini-2.5-flash";
+const FALLBACK_MODEL = "gemini-2.0-flash";
+const RETRY_DELAYS_MS = [1000, 2000];
 
 const OCR_PROMPT = `Bu bir Turk fisi/makbuzu fotografidir. Lutfen asagidaki bilgileri JSON formatinda cikar:
 
@@ -41,44 +45,66 @@ function extractJSON(text: string): string {
   return jsonStr;
 }
 
+function isOverloaded(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return (
+    msg.includes("503") ||
+    msg.includes("Service Unavailable") ||
+    msg.includes("high demand") ||
+    msg.includes("overloaded")
+  );
+}
+
+async function callGemini(modelName: string, parts: Part[]): Promise<string> {
+  const model = getGemini().getGenerativeModel({ model: modelName });
+  const result = await model.generateContent(parts);
+  const text = result.response.text();
+  if (!text) throw new Error("EMPTY_RESPONSE");
+  return text;
+}
+
+async function callWithFallback(parts: Part[]): Promise<string> {
+  // 3 deneme: gemini-2.5-flash, 1s bekle, tekrar, 2s bekle, tekrar
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
+    }
+    try {
+      return await callGemini(PRIMARY_MODEL, parts);
+    } catch (error) {
+      if (!isOverloaded(error)) throw error;
+    }
+  }
+
+  // Birincil model 503 vermeye devam etti → yedek modele geç
+  try {
+    return await callGemini(FALLBACK_MODEL, parts);
+  } catch (error) {
+    if (isOverloaded(error)) throw new Error("SERVICE_OVERLOADED");
+    throw error;
+  }
+}
+
 export async function parseReceipt(
   imageBase64: string,
   mimeType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"
 ): Promise<ReceiptOCRResult> {
-  const genAI = getGemini();
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-  const result = await model.generateContent([
-    {
-      inlineData: {
-        mimeType,
-        data: imageBase64,
-      },
-    },
+  const text = await callWithFallback([
+    { inlineData: { mimeType, data: imageBase64 } },
     { text: OCR_PROMPT },
   ]);
-
-  const response = result.response;
-  const text = response.text();
-
-  if (!text) {
-    throw new Error("OCR yaniti alinamadi");
-  }
 
   try {
     return JSON.parse(extractJSON(text)) as ReceiptOCRResult;
   } catch {
-    throw new Error("OCR sonucu ayristirilamadi: " + text.slice(0, 200));
+    throw new Error("PARSE_FAILED: " + text.slice(0, 200));
   }
 }
 
 export async function parsePDFInvoice(
   textContent: string
 ): Promise<Partial<ReceiptOCRResult>> {
-  const genAI = getGemini();
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-  const result = await model.generateContent([
+  const text = await callWithFallback([
     {
       text: `Bu bir Turk faturasinin metin icerigidir. Lutfen asagidaki bilgileri JSON formatinda cikar:
 
@@ -100,13 +126,6 @@ ${textContent}
 Sadece JSON dondur.`,
     },
   ]);
-
-  const response = result.response;
-  const text = response.text();
-
-  if (!text) {
-    throw new Error("PDF analiz yaniti alinamadi");
-  }
 
   return JSON.parse(extractJSON(text));
 }

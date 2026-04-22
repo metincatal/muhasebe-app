@@ -178,9 +178,13 @@ export default function ScanReceiptPage() {
         }
       }
     } catch (err) {
-      toast.error("OCR hatasi", {
-        description: err instanceof Error ? err.message : "Fis okunamadi",
-      });
+      let description = "Fiş okunamadı. Lütfen tekrar deneyin.";
+      if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
+        description = "İnternet bağlantınızı kontrol edip tekrar deneyin.";
+      } else if (err instanceof Error && err.message) {
+        description = err.message;
+      }
+      toast.error("OCR hatası", { description });
       setStep("capture");
     } finally {
       setIsProcessing(false);
