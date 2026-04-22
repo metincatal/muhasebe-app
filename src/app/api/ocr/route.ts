@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseReceipt } from "@/lib/ai/ocr";
 
+function httpStatus(error: unknown): number | undefined {
+  if (error && typeof error === "object" && "status" in error) {
+    return (error as { status: number }).status;
+  }
+}
+
 function toUserMessage(error: unknown): { message: string; status: number } {
+  const code = httpStatus(error);
   const msg = error instanceof Error ? error.message : String(error);
 
-  if (msg === "SERVICE_OVERLOADED" || msg.includes("503") || msg.includes("Service Unavailable")) {
+  if (msg === "SERVICE_OVERLOADED" || code === 503 || msg.includes("503") || msg.includes("Service Unavailable")) {
     return {
       message: "Fiş okuma servisi şu an çok yoğun. Birkaç dakika bekleyip tekrar deneyin.",
       status: 503,
     };
   }
-  if (msg.includes("429") || msg.includes("quota") || msg.includes("Too Many Requests")) {
+  if (code === 429 || msg.includes("429") || msg.includes("quota") || msg.includes("Too Many Requests")) {
     return {
       message: "Günlük fiş tarama limitine ulaşıldı. Yarın tekrar deneyin.",
       status: 429,

@@ -83,6 +83,9 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
+      }).catch(() => {
+        // Ağ hatası: önbellekte de yoksa boş 503 dön
+        return new Response(null, { status: 503, statusText: "Service Unavailable" });
       });
     })
   );

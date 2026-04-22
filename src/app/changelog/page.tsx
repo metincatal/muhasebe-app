@@ -15,6 +15,14 @@ const changelog: {
   changes: { type: "yeni" | "iyileştirme" | "düzeltme"; text: string }[];
 }[] = [
   {
+    version: "1.4.5",
+    date: "22 Nisan 2026",
+    changes: [
+      { type: "düzeltme", text: "Fiş tarama 503 hatası artık sayısal HTTP kodu üzerinden de algılanıyor; yanlış fallback model düzeltildi (gemini-1.5-flash)" },
+      { type: "düzeltme", text: "Service Worker'da statik dosya yüklenememe hatası giderildi (sw.js:80 unhandled rejection)" },
+    ],
+  },
+  {
     version: "1.4.4",
     date: "22 Nisan 2026",
     changes: [

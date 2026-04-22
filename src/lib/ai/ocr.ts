@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, type Part } from "@google/generative-ai";
 import type { ReceiptOCRResult } from "@/types";
 
 const PRIMARY_MODEL = "gemini-2.5-flash";
-const FALLBACK_MODEL = "gemini-2.0-flash";
+const FALLBACK_MODEL = "gemini-1.5-flash";
 const RETRY_DELAYS_MS = [1000, 2000];
 
 const OCR_PROMPT = `Bu bir Turk fisi/makbuzu fotografidir. Lutfen asagidaki bilgileri JSON formatinda cikar:
@@ -45,7 +45,14 @@ function extractJSON(text: string): string {
   return jsonStr;
 }
 
+function httpStatus(error: unknown): number | undefined {
+  if (error && typeof error === "object" && "status" in error) {
+    return (error as { status: number }).status;
+  }
+}
+
 function isOverloaded(error: unknown): boolean {
+  if (httpStatus(error) === 503) return true;
   const msg = error instanceof Error ? error.message : String(error);
   return (
     msg.includes("503") ||
